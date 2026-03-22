@@ -1,8 +1,16 @@
+# Install PyTorch with CUDA 12.8 support (compatible with CUDA 12.9 driver):
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+#
+# For CPU-only:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#
+# Then install the rest:
+#   pip install -r requirements.txt
+
 accelerate==1.13.0
 huggingface_hub==1.7.2
 matplotlib==3.10.8
 numpy==2.4.3
 pandas==3.0.1
-torch==2.10.0+cpu
 tqdm==4.67.3
 transformers==5.3.0
