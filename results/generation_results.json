@@ -1,0 +1,38 @@
+[
+  {
+    "label": "8B Baseline (greedy)",
+    "gate_mode": "joint",
+    "curve_thresh": 999.0,
+    "entropy_thresh": 999.0,
+    "early_layer": 12,
+    "alpha": 0.0,
+    "accuracy": 0.48,
+    "gate_fire_rate": 0.0,
+    "repetition_rate": 0.0,
+    "n_samples": 50
+  },
+  {
+    "label": "8B SLED + entropy (H=4.5)",
+    "gate_mode": "sled_entropy",
+    "curve_thresh": 0.0,
+    "entropy_thresh": 4.5,
+    "early_layer": 12,
+    "alpha": 0.3,
+    "accuracy": 0.44,
+    "gate_fire_rate": 0.0467,
+    "repetition_rate": 0.0,
+    "n_samples": 50
+  },
+  {
+    "label": "8B SLED + entropy (H=5.0)",
+    "gate_mode": "sled_entropy",
+    "curve_thresh": 0.0,
+    "entropy_thresh": 5.0,
+    "early_layer": 12,
+    "alpha": 0.3,
+    "accuracy": 0.46,
+    "gate_fire_rate": 0.0243,
+    "repetition_rate": 0.0,
+    "n_samples": 50
+  }
+]

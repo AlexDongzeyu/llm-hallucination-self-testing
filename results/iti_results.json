@@ -1,0 +1,44 @@
+[
+  {
+    "label": "ITI alpha=10",
+    "threshold": 0.55,
+    "accuracy": 0.64,
+    "rep_rate": 0.26,
+    "n": 50
+  },
+  {
+    "label": "ITI alpha=10",
+    "threshold": 0.65,
+    "accuracy": 0.46,
+    "rep_rate": 0.26,
+    "n": 50
+  },
+  {
+    "label": "ITI alpha=15",
+    "threshold": 0.55,
+    "accuracy": 0.06,
+    "rep_rate": 0.94,
+    "n": 50
+  },
+  {
+    "label": "ITI alpha=15",
+    "threshold": 0.65,
+    "accuracy": 0.06,
+    "rep_rate": 0.94,
+    "n": 50
+  },
+  {
+    "label": "ITI alpha=20",
+    "threshold": 0.55,
+    "accuracy": 0.0,
+    "rep_rate": 1.0,
+    "n": 50
+  },
+  {
+    "label": "ITI alpha=20",
+    "threshold": 0.65,
+    "accuracy": 0.0,
+    "rep_rate": 1.0,
+    "n": 50
+  }
+]

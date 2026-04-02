@@ -1,0 +1,23 @@
+[
+  {
+    "label": "BoN-1 T=0.3",
+    "accuracy": 0.3,
+    "rep_rate": 0.0,
+    "n_bon": 1,
+    "n_questions": 50
+  },
+  {
+    "label": "BoN-3 T=0.3",
+    "accuracy": 0.28,
+    "rep_rate": 0.02,
+    "n_bon": 3,
+    "n_questions": 50
+  },
+  {
+    "label": "BoN-5 T=0.3",
+    "accuracy": 0.28,
+    "rep_rate": 0.0,
+    "n_bon": 5,
+    "n_questions": 50
+  }
+]
