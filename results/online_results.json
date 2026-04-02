@@ -1,0 +1,54 @@
+[
+  {
+    "model": "Llama-3.3-70B",
+    "n": 50,
+    "greedy_acc_055": 0.84,
+    "greedy_acc_065": 0.74,
+    "cove_acc_055": 0.78,
+    "cove_acc_065": 0.66,
+    "cove_delta_055": -0.06,
+    "cove_delta_065": -0.08,
+    "greedy_rep": 0.04,
+    "cove_rep": 0.1,
+    "runtime_min": 40.5
+  },
+  {
+    "model": "Llama-4-Scout-17B",
+    "n": 50,
+    "greedy_acc_055": 0.8,
+    "greedy_acc_065": 0.68,
+    "cove_acc_055": 0.76,
+    "cove_acc_065": 0.56,
+    "cove_delta_055": -0.04,
+    "cove_delta_065": -0.12,
+    "greedy_rep": 0.02,
+    "cove_rep": 0.1,
+    "runtime_min": 11.8
+  },
+  {
+    "model": "Qwen3-32B",
+    "n": 50,
+    "greedy_acc_055": 0.84,
+    "greedy_acc_065": 0.7,
+    "cove_acc_055": 0.82,
+    "cove_acc_065": 0.7,
+    "cove_delta_055": -0.02,
+    "cove_delta_065": 0.0,
+    "greedy_rep": 0.02,
+    "cove_rep": 0.04,
+    "runtime_min": 7.5
+  },
+  {
+    "model": "GPT-OSS-120B",
+    "n": 50,
+    "greedy_acc_055": 0.8,
+    "greedy_acc_065": 0.62,
+    "cove_acc_055": 0.76,
+    "cove_acc_065": 0.56,
+    "cove_delta_055": -0.04,
+    "cove_delta_065": -0.06,
+    "greedy_rep": 0.02,
+    "cove_rep": 0.02,
+    "runtime_min": 11.2
+  }
+]
