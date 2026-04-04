@@ -1,3 +1,5 @@
+"""Interactive helper to inspect one token's layer-wise logit trajectory."""
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import matplotlib.pyplot as plt

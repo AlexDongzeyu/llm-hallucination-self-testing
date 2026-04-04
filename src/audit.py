@@ -1,5 +1,5 @@
 """
-audit.py — Step 1: Understand the structure of trajectories_dataset.csv
+audit.py — Step 1: Understand the structure of data/trajectories_dataset.csv
 before writing any new code.
 
 Questions to answer:
@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 # ── Load the dataset ──
-df = pd.read_csv("trajectories_dataset.csv")
+df = pd.read_csv("data/trajectories_dataset.csv")
 
 # ── 1. Basic shape ──
 print("=" * 60)

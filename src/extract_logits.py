@@ -136,7 +136,7 @@ print("=" * 50)
 print("CROSS-CHECK AGAINST CSV")
 print("=" * 50)
 
-df = pd.read_csv("trajectories_dataset.csv")
+df = pd.read_csv("data/trajectories_dataset.csv")
 
 # Find the stored final_logit for Ottawa on this prompt
 stored_row = df[

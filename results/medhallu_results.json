@@ -1,0 +1,40 @@
+{
+  "dataset": {
+    "id": "UTAustin-AIHealth/MedHallu",
+    "subset": "pqa_artificial",
+    "split": "train"
+  },
+  "threshold": 0.65,
+  "n_target": 50,
+  "results": [
+    {
+      "label": "greedy",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.46,
+      "rep_rate": 0.0
+    },
+    {
+      "label": "cove",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.54,
+      "rep_rate": 0.0
+    },
+    {
+      "label": "dynamic",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.48,
+      "rep_rate": 0.08
+    },
+    {
+      "label": "gadr2",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.52,
+      "rep_rate": 0.02
+    }
+  ],
+  "runtime_min": 91.95
+}

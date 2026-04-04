@@ -1,44 +1,44 @@
 [
   {
-    "label": "ITI alpha=10",
+    "label": "ITI alpha=0.5",
     "threshold": 0.55,
-    "accuracy": 0.64,
-    "rep_rate": 0.26,
+    "accuracy": 0.8,
+    "rep_rate": 0.02,
     "n": 50
   },
   {
-    "label": "ITI alpha=10",
+    "label": "ITI alpha=0.5",
     "threshold": 0.65,
-    "accuracy": 0.46,
-    "rep_rate": 0.26,
+    "accuracy": 0.72,
+    "rep_rate": 0.02,
     "n": 50
   },
   {
-    "label": "ITI alpha=15",
+    "label": "ITI alpha=1.0",
     "threshold": 0.55,
-    "accuracy": 0.06,
-    "rep_rate": 0.94,
+    "accuracy": 0.8,
+    "rep_rate": 0.02,
     "n": 50
   },
   {
-    "label": "ITI alpha=15",
+    "label": "ITI alpha=1.0",
     "threshold": 0.65,
-    "accuracy": 0.06,
-    "rep_rate": 0.94,
+    "accuracy": 0.7,
+    "rep_rate": 0.02,
     "n": 50
   },
   {
-    "label": "ITI alpha=20",
+    "label": "ITI alpha=2.0",
     "threshold": 0.55,
-    "accuracy": 0.0,
-    "rep_rate": 1.0,
+    "accuracy": 0.78,
+    "rep_rate": 0.04,
     "n": 50
   },
   {
-    "label": "ITI alpha=20",
+    "label": "ITI alpha=2.0",
     "threshold": 0.65,
-    "accuracy": 0.0,
-    "rep_rate": 1.0,
+    "accuracy": 0.7,
+    "rep_rate": 0.04,
     "n": 50
   }
 ]

@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datasets import load_dataset
 from sentence_transformers import SentenceTransformer, util
-from generate import model, tokenizer, get_layer_logits_cached, compute_entropy, gated_generate
+from generate_base import model, tokenizer, get_layer_logits_cached, compute_entropy, gated_generate
 
 
 dataset = load_dataset("truthful_qa", "generation", split="validation")

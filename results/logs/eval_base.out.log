@@ -1,0 +1,10 @@
+Model loaded | Device: cuda:0 | Layers: 28 | Vocab: 128256
+Loading TruthfulQA generation split...
+Loaded 817 samples
+Loading sentence scorer (forced to CPU to save VRAM for LLM)...
+
+============================================================
+Running: BoN-1 T=0.3
+============================================================
+  [BoN-1 T=0.3] 1/50 acc=100.0% | rep=0.0% | sample=25.3s | ETA=20.7min
+  [BoN-1 T=0.3] 11/50 acc=36.4% | rep=0.0% | sample=23.4s | ETA=15.2min

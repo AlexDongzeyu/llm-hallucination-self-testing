@@ -1,0 +1,50 @@
+[
+  {
+    "label": "Baseline (greedy)",
+    "gate_mode": "joint",
+    "curve_thresh": 999.0,
+    "entropy_thresh": 999.0,
+    "early_layer": 12,
+    "alpha": 0.0,
+    "accuracy": 0.35,
+    "gate_fire_rate": 0.0,
+    "repetition_rate": 0.0,
+    "n_samples": 100
+  },
+  {
+    "label": "SLED + entropy gate (H=3.0)",
+    "gate_mode": "sled_entropy",
+    "curve_thresh": 0.0,
+    "entropy_thresh": 3.0,
+    "early_layer": 12,
+    "alpha": 0.3,
+    "accuracy": 0.34,
+    "gate_fire_rate": 0.2755,
+    "repetition_rate": 0.05,
+    "n_samples": 100
+  },
+  {
+    "label": "SLED + entropy gate (H=3.5)",
+    "gate_mode": "sled_entropy",
+    "curve_thresh": 0.0,
+    "entropy_thresh": 3.5,
+    "early_layer": 12,
+    "alpha": 0.3,
+    "accuracy": 0.36,
+    "gate_fire_rate": 0.1866,
+    "repetition_rate": 0.04,
+    "n_samples": 100
+  },
+  {
+    "label": "SLED + entropy gate (H=4.0)",
+    "gate_mode": "sled_entropy",
+    "curve_thresh": 0.0,
+    "entropy_thresh": 4.0,
+    "early_layer": 12,
+    "alpha": 0.3,
+    "accuracy": 0.34,
+    "gate_fire_rate": 0.1219,
+    "repetition_rate": 0.01,
+    "n_samples": 100
+  }
+]

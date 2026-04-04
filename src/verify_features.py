@@ -1,6 +1,6 @@
 """
 verify_features.py — Step 2A: Verify that curvature, slope, and stability
-stored in trajectories_dataset.csv match a manual recomputation.
+stored in data/trajectories_dataset.csv match a manual recomputation.
 
 If any "Match" line prints False, there's a bug in the original eval.py
 that will corrupt everything downstream.
@@ -9,7 +9,7 @@ that will corrupt everything downstream.
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("trajectories_dataset.csv")
+df = pd.read_csv("data/trajectories_dataset.csv")
 
 # ── Pick ONE specific example to verify manually ──
 # Isolate one prompt + one candidate + one prompt type = 29 rows in order

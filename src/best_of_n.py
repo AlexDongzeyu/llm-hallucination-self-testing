@@ -7,7 +7,7 @@ self-consistent one via pairwise cosine similarity in embedding space.
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer, util
-from generate import model, tokenizer
+from generate_base import model, tokenizer
 
 scorer = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 

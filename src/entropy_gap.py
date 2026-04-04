@@ -8,7 +8,7 @@ was projected in eval.py but discarded before saving.
 
 import pandas as pd
 
-df = pd.read_csv("trajectories_dataset.csv")
+df = pd.read_csv("data/trajectories_dataset.csv")
 
 print("Columns available:", list(df.columns))
 print()

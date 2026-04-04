@@ -1,0 +1,21 @@
+{
+  "dataset": "truthful_qa:generation:validation",
+  "n": 50,
+  "k_samples": 4,
+  "selfcheck_similarity_threshold": 0.7,
+  "reference_threshold": 0.65,
+  "qa_accuracy": 0.72,
+  "qa_rep_rate": 0.0,
+  "detector_accuracy": 0.74,
+  "detector_precision": 0.5556,
+  "detector_recall": 0.3571,
+  "detector_f1": 0.4348,
+  "mean_confidence": 0.8036,
+  "runtime_min": 23.69,
+  "counts": {
+    "tp": 5,
+    "fp": 4,
+    "tn": 32,
+    "fn": 9
+  }
+}

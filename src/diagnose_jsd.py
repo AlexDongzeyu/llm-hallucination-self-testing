@@ -9,7 +9,7 @@ Low JSD everywhere  → layers are redundant, early signal is weak (explains SLE
 
 import numpy as np
 import torch
-from generate import model, tokenizer, get_layer_logits_cached
+from generate_base import model, tokenizer, get_layer_logits_cached
 
 
 def softmax(x: np.ndarray) -> np.ndarray:
@@ -77,5 +77,5 @@ if __name__ == "__main__":
     print(f"  Mean JSD (late layers   >=20)    : {np.mean(late_vals):.4f}"  if late_vals else "  No late layers")
     print()
     print("Interpretation:")
-    print("  High early JSD → early layers diverge from final → SLED has meaningful signal")
-    print("  Low  early JSD → layers agree   → SLED correction is weak no matter the gate")
+    print("  High early JSD -> early layers diverge from final -> SLED has meaningful signal")
+    print("  Low  early JSD -> layers agree   -> SLED correction is weak no matter the gate")
