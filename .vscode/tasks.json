@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "run-medhallu-generation-resume",
+			"type": "shell",
+			"command": "c:/Users/dongz/OneDrive/Project Code/LLM_Hallucination/llm-env/Scripts/python.exe",
+			"args": [
+				"-u",
+				"experiments/run_medhallu_generation.py",
+				"--n",
+				"50",
+				"--threshold",
+				"0.65",
+				"--out",
+				"results/medhallu_generation_results.json",
+				"--resume"
+			],
+			"isBackground": false
+		}
+	]
+}

@@ -1,16 +1,14 @@
-"""
-regenerate_figures.py
-Regenerates all 5 paper figures using ACTUAL data from result files.
+"""Regenerate all 5 figures from current result files.
 
-Run AFTER:
-  1. extract_entropy_layers.py      -> results/entropy_by_layer.json
-  2. run_delta_dola_complete_grid.py -> results/truthfulqa_delta_dola_sweep.json
-  3. run_medhallu_ablations.py       -> results/medhallu_ablation_results.json
+Required upstream outputs:
+- results/entropy_by_layer.json
+- results/truthfulqa_delta_dola_sweep.json
+- results/medhallu_ablation_results.json
 
-Label contract (must match ablation script):
-  "iti_alpha0.5", "sled", "bon3_t0.3"
-
-Usage: python experiments/regenerate_figures.py
+Label keys used from MedHallu ablations:
+- iti_alpha0.5
+- sled
+- bon3_t0.3
 """
 
 import csv
@@ -36,14 +34,14 @@ def load_json(relpath):
     return None
 
 
-# ── Load all data ─────────────────────────────────────────────────────────────
+# Load result files.
 print("Loading result files...", flush=True)
 gen_results  = load_json("results/medhallu_generation_results.json")
 abl_results  = load_json("results/medhallu_ablation_results.json")
 sweep_data   = load_json("results/truthfulqa_delta_dola_sweep.json")
 entropy_data = load_json("results/entropy_by_layer.json")
 
-# Build unified MedHallu accuracy lookup
+# Build a single MedHallu accuracy lookup across generation + ablation files.
 med_acc = {}
 if gen_results:
     for r in gen_results["results"]:
@@ -166,7 +164,7 @@ def fig1():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 2: Method Comparison — ALL NUMBERS FROM ACTUAL FILES
+# FIGURE 2: Method comparison from result files
 # ─────────────────────────────────────────────────────────────────────────────
 def fig2():
     # TruthfulQA — canonical verified results
@@ -259,7 +257,7 @@ def fig2():
     ax.set_ylabel("Accuracy", fontsize=11)
     ax.set_ylim(0, 0.95)
     ax.set_title(
-        "CURED: Only Method Achieving Positive Results on Both Benchmarks\n"
+        "Method Comparison Across TruthfulQA and MedHallu\n"
         "Llama-3.2-3B-Instruct | TruthfulQA n=50, MedHallu n=50 | threshold=0.65",
         fontsize=11, fontweight="bold",
     )
@@ -342,7 +340,7 @@ def fig3():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 4: d2H routing distribution + CORRECTED MedHallu bars
+# FIGURE 4: d2H routing distribution + MedHallu bars
 # ─────────────────────────────────────────────────────────────────────────────
 def fig4():
     routing_path = ROOT / "results" / "routing_dataset.csv"
@@ -382,7 +380,7 @@ def fig4():
     ax1.legend(fontsize=8.5)
     ax1.grid(alpha=0.3)
 
-    # Right: ACTUAL MedHallu bar chart
+    # Right: MedHallu bar chart
     bar_labels = ["Greedy\n(baseline)", "CoVe\n(all medical)", "CURED\n(routed)"]
     bar_vals   = [greedy_acc, cove_acc, cured_acc]
     bar_colors = ["#90A4AE", "#EF9A9A", "#C62828"]
@@ -406,7 +404,7 @@ def fig4():
 
     ax2.set_ylabel("Generation Accuracy (cosine ≥ 0.65)", fontsize=10)
     ax2.set_title("MedHallu Generation Results\n"
-                  "CURED is the only method that beats greedy",
+                  "Comparison against greedy baseline",
                   fontsize=10, fontweight="bold")
     ax2.set_ylim(0, 0.72)
     ax2.legend(fontsize=8.5)
@@ -420,7 +418,7 @@ def fig4():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 5: Cross-model CoVe (already correct, no change needed)
+# FIGURE 5: Cross-model CoVe
 # ─────────────────────────────────────────────────────────────────────────────
 def fig5():
     data = [

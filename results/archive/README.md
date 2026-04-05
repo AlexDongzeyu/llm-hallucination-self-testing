@@ -1,12 +1,13 @@
 # Archive Folder
 
-This folder keeps historical or legacy artifacts that are not the current source of truth.
+Historical artifacts only. Do not use this folder as the current source of truth.
 
 ## Files
 
-- `medhallu_detector_legacy_results.json`
-  - Older detector-style MedHallu evaluation output (kept for comparison).
-- `medhallu_results_snapshot_n50.json`
-  - Snapshot copy of the finalized MedHallu MC n=50 output.
+- `medhallu_detector_legacy_results.json`: legacy detector-style MedHallu output (comparison only).
+- `medhallu_results_snapshot_n50.json`: snapshot copy of MedHallu MC n=50 output.
 
-Use `results/medhallu_results.json` as the canonical MedHallu result in normal workflows.
+Canonical files:
+- `results/medhallu_results.json` (MC ablation)
+- `results/medhallu_generation_results.json` (primary generation metric)
+- `raw_results.md` (latest synced summary)

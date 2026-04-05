@@ -1,56 +1,60 @@
 # CURED: Curvature-Informed Routing and Entropy-based Decoding
 
-Systematic study of inference-time hallucination mitigation for RLHF-tuned LLMs.
+Inference-time hallucination mitigation experiments for RLHF-tuned LLMs.
 
-**Core finding:** RLHF training compresses layer-wise entropy (dH < 0 for 100% of
-questions, mean delta H = -9.86), rendering all logit-space decoding interventions
-(DoLa, DeLTa, SLED) ineffective on adversarial QA. CURED routes by domain +
-entropy curvature, achieving +4% on MedHallu generation (54% vs 50% greedy)
-without degrading TruthfulQA.
+## Current Snapshot (2026-04-05)
 
-## Results Summary
+Model: Llama-3.2-3B-Instruct.
 
-| Method | TruthfulQA | MedHallu (gen) |
-|--------|-----------|----------------|
-| Greedy (baseline) | 70% | 50% |
-| SLED | 64% | - |
-| BoN-5 | 64% | - |
-| CoVe | 60% | 50% |
-| CoVe+RAG | - | 50% |
-| ITI alpha=0.5 | 72% | - |
-| DeLTa+DoLa | 74% (=greedy) | 52% |
-| SelfCheck | 72% | - |
-| **CURED (ours)** | **74%** | **54%** |
+- Entropy extraction (`n=30`): `H1=0.0806`, `H_last=0.8516`, `mean dH=+0.7711`, `dH<0=16.7%`.
+- TruthfulQA DeLTa+DoLa 5x5 sweep (`n=50`, threshold `0.65`): best `74%` at `(alpha1=0.3, alpha2=0.3)`, and the greedy point `(0.0, 0.0)` is also `74%`.
+- MedHallu generation (`n=50`, threshold `0.65`): best strategy is `gadr2_cured` at `54%`.
 
-Model: Llama-3.2-3B-Instruct. n=50 per benchmark, threshold=0.65.
+### MedHallu Generation Results
 
-## Project Layout
+| Method | Accuracy | Repetition |
+|---|---:|---:|
+| greedy | 50% | 0% |
+| cove | 50% | 2% |
+| cove_rag | 50% | 0% |
+| delta_dola | 52% | 0% |
+| **gadr2_cured** | **54%** | 2% |
 
-- `src/generate_instruct.py` - all generation strategies + CURED router
-- `experiments/` - runnable evaluation scripts
-- `results/` - canonical output files
-- `results/figures/` - paper figures
+### MedHallu Ablations
 
-## Key Files
+| Method | Accuracy | Repetition |
+|---|---:|---:|
+| iti_alpha0.5 | 52% | 4% |
+| sled | 52% | 0% |
+| bon3_t0.3 | 48% | 0% |
 
-- `results/routing_dataset.csv` - 100-row feature+outcome dataset
-- `results/truthfulqa_delta_dola_sweep.json` - DeLTa+DoLa alpha sweep
-- `results/medhallu_generation_results.json` - generation eval (primary metric)
-- `results/medhallu_results.json` - MC likelihood eval (ablation)
-- `results/comprehensive_results.md` - consolidated results snapshot
+Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) and is not run on MedHallu in the current pipeline.
+
+## Canonical Files
+
+- `results/entropy_by_layer.json`
+- `results/truthfulqa_delta_dola_sweep.json`
+- `results/medhallu_generation_results.json`
+- `results/medhallu_ablation_results.json`
+- `results/medhallu_results.json`
+- `results/figures/*.png`
+- `raw_results.md`
 
 ## Run Commands
 
 ```bash
-# MedHallu generation eval (primary) - ~4 hours
+# MedHallu generation (primary)
 python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
 
-# TruthfulQA DeLTa+DoLa sweep - ~85 min
-python -u experiments/run_delta_dola_sweep.py --n 50 --threshold 0.65
+# TruthfulQA DeLTa+DoLa full grid
+python -u experiments/run_delta_dola_complete_grid.py --n 50 --threshold 0.65
 
-# MedHallu MC likelihood eval (ablation) - ~18 min
+# MedHallu ablations (SLED/BoN/ITI)
+python -u experiments/run_medhallu_ablations.py
+
+# MedHallu MC chooser (ablation)
 python -u experiments/eval_medhallu.py --n 50 --alpha1 0.3 --alpha2 0.3
 
-# Generate paper figures - ~30 sec
-python experiments/generate_paper_figures.py
+# Regenerate all figures
+python experiments/regenerate_figures.py
 ```

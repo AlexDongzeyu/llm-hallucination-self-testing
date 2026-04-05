@@ -15,16 +15,9 @@
       "runtime_min": 9.6
     },
     {
-      "alpha1": 0.2,
-      "alpha2": 0.2,
-      "accuracy": 0.68,
-      "rep_rate": 0.0,
-      "runtime_min": 9.6
-    },
-    {
-      "alpha1": 0.3,
-      "alpha2": 0.3,
-      "accuracy": 0.74,
+      "alpha1": 0.1,
+      "alpha2": 0.0,
+      "accuracy": 0.7,
       "rep_rate": 0.0,
       "runtime_min": 9.4
     },
@@ -36,11 +29,39 @@
       "runtime_min": 9.2
     },
     {
-      "alpha1": 0.0,
-      "alpha2": 0.2,
-      "accuracy": 0.72,
+      "alpha1": 0.3,
+      "alpha2": 0.0,
+      "accuracy": 0.66,
+      "rep_rate": 0.0,
+      "runtime_min": 9.7
+    },
+    {
+      "alpha1": 0.4,
+      "alpha2": 0.0,
+      "accuracy": 0.64,
       "rep_rate": 0.02,
-      "runtime_min": 8.9
+      "runtime_min": 9.7
+    },
+    {
+      "alpha1": 0.0,
+      "alpha2": 0.1,
+      "accuracy": 0.72,
+      "rep_rate": 0.0,
+      "runtime_min": 9.8
+    },
+    {
+      "alpha1": 0.1,
+      "alpha2": 0.1,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 9.7
+    },
+    {
+      "alpha1": 0.2,
+      "alpha2": 0.1,
+      "accuracy": 0.64,
+      "rep_rate": 0.0,
+      "runtime_min": 9.7
     },
     {
       "alpha1": 0.3,
@@ -50,11 +71,39 @@
       "runtime_min": 9.4
     },
     {
-      "alpha1": 0.1,
-      "alpha2": 0.3,
+      "alpha1": 0.4,
+      "alpha2": 0.1,
       "accuracy": 0.68,
+      "rep_rate": 0.0,
+      "runtime_min": 10.0
+    },
+    {
+      "alpha1": 0.0,
+      "alpha2": 0.2,
+      "accuracy": 0.72,
       "rep_rate": 0.02,
-      "runtime_min": 9.4
+      "runtime_min": 8.9
+    },
+    {
+      "alpha1": 0.1,
+      "alpha2": 0.2,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 9.7
+    },
+    {
+      "alpha1": 0.2,
+      "alpha2": 0.2,
+      "accuracy": 0.68,
+      "rep_rate": 0.0,
+      "runtime_min": 9.6
+    },
+    {
+      "alpha1": 0.3,
+      "alpha2": 0.2,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 9.6
     },
     {
       "alpha1": 0.4,
@@ -64,11 +113,74 @@
       "runtime_min": 9.7
     },
     {
+      "alpha1": 0.0,
+      "alpha2": 0.3,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 9.6
+    },
+    {
+      "alpha1": 0.1,
+      "alpha2": 0.3,
+      "accuracy": 0.68,
+      "rep_rate": 0.02,
+      "runtime_min": 9.4
+    },
+    {
+      "alpha1": 0.2,
+      "alpha2": 0.3,
+      "accuracy": 0.68,
+      "rep_rate": 0.02,
+      "runtime_min": 10.0
+    },
+    {
+      "alpha1": 0.3,
+      "alpha2": 0.3,
+      "accuracy": 0.74,
+      "rep_rate": 0.0,
+      "runtime_min": 9.4
+    },
+    {
+      "alpha1": 0.4,
+      "alpha2": 0.3,
+      "accuracy": 0.72,
+      "rep_rate": 0.0,
+      "runtime_min": 9.7
+    },
+    {
+      "alpha1": 0.0,
+      "alpha2": 0.4,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 9.3
+    },
+    {
+      "alpha1": 0.1,
+      "alpha2": 0.4,
+      "accuracy": 0.66,
+      "rep_rate": 0.0,
+      "runtime_min": 9.5
+    },
+    {
       "alpha1": 0.2,
       "alpha2": 0.4,
       "accuracy": 0.7,
       "rep_rate": 0.0,
       "runtime_min": 9.5
+    },
+    {
+      "alpha1": 0.3,
+      "alpha2": 0.4,
+      "accuracy": 0.7,
+      "rep_rate": 0.0,
+      "runtime_min": 10.0
+    },
+    {
+      "alpha1": 0.4,
+      "alpha2": 0.4,
+      "accuracy": 0.72,
+      "rep_rate": 0.0,
+      "runtime_min": 9.6
     }
   ],
   "best": {
@@ -78,5 +190,5 @@
     "rep_rate": 0.0,
     "runtime_min": 9.6
   },
-  "runtime_min": 84.55
+  "runtime_min": 155.13
 }

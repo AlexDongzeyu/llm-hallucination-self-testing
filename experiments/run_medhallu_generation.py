@@ -1,15 +1,7 @@
-"""
-run_medhallu_generation.py
-Generation-based MedHallu evaluation (primary metric for CURED paper).
+"""MedHallu generation evaluation (primary metric).
 
-Evaluates free-form generation quality by cosine similarity to Ground Truth.
-This is the correct framing for comparing generation strategies (not MC likelihood).
-
-Strategies compared: greedy, cove, gadr2/CURED, cove_rag, delta_dola
-
-Usage:
-    python -u experiments/run_medhallu_generation.py
-    python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
+Scoring: cosine similarity to Ground Truth.
+Default strategies: greedy, cove, gadr2_cured, cove_rag, delta_dola.
 """
 
 import argparse

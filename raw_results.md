@@ -1,332 +1,153 @@
-# Inference-Time Hallucination Reduction - Full Synced Results
+# Raw Results (Synced)
 
-This document is synchronized to the current workspace artifacts in `results/` and latest verified rerun outputs from logs/terminal.
+Last sync: 2026-04-05
 
-## 0. Completion Status
+This file is the concise source-of-truth summary for current artifacts in `results/`.
 
-All target result artifacts exist:
+## 1) Integrity and Status
 
-- `results/bon_results.json`
-- `results/calibration_results.json`
-- `results/generation_results.json`
-- `results/generation_results_n100_4configs.json`
-- `results/grid_search_results.json`
-- `results/instruct_results.json`
-- `results/iti_results.json`
-- `results/selfcheck_results.json`
-- `results/online_results.json`
-- `results/medhallu_generation_results.json`
-- `results/medhallu_results.json`
+- JSON files checked (recursive under `results/`): 17
+- JSON parse failures: 0
+- Active Python processes at audit finish: none
+- Core artifacts present and up to date vs generator scripts: yes
+
+Core artifacts:
+- `results/entropy_by_layer.json`
 - `results/truthfulqa_delta_dola_sweep.json`
-- `results/archive/medhallu_results_snapshot_n50.json`
-- `results/routing_dataset.csv`
-- `results/router_model.joblib`
+- `results/medhallu_generation_results.json`
+- `results/medhallu_ablation_results.json`
+- `results/medhallu_results.json`
+- `results/figures/*.png`
 
-Latest orchestrated completion marker:
+## 2) Entropy Extraction
 
-- `results/logs/pipeline_remaining_steps.done` = `COMPLETED 2026-04-03T04:47:58`
+Source: `results/entropy_by_layer.json`
 
-Latest standalone artifact refresh:
+- n_questions: 30
+- n_layers: 28
+- H1 mean: 0.0806
+- H_last mean: 0.8516
+- mean dH: +0.7711
+- dH < 0: 16.7%
 
-- Final generation n=50 output is synced in `results/medhallu_generation_results.json`.
-- Final corrected MC n=50 output is synced in `results/medhallu_results.json` and archived in `results/archive/medhallu_results_snapshot_n50.json`.
+## 3) TruthfulQA DeLTa+DoLa Sweep
 
-## 1. Calibration Results (`results/calibration_results.json`)
+Source: `results/truthfulqa_delta_dola_sweep.json`
 
-| Key | Model | ECE | Entropy-Accuracy Corr | Mean Entropy | Mean Top-1 Prob | Accuracy | n |
-| :-- | :-- | --: | --: | --: | --: | --: | --: |
-| `meta_llama_Llama_3_1_8B` | meta-llama/Llama-3.1-8B | 0.2711 | 0.1413 | 3.3092 | 0.3456 | 0.48 | 50 |
-| `meta_llama_Llama_3_2_3B` | meta-llama/Llama-3.2-3B | 0.0821 | -0.4211 | 3.5120 | 0.2140 | 0.35 | 100 |
-| `Qwen_Qwen2_5_3B` | Qwen/Qwen2.5-3B | 0.3121 | -0.0814 | 2.1040 | 0.4420 | 0.14 | 100 |
+- rows: 25 (full 5x5)
+- n_target: 50
+- threshold: 0.65
+- runtime_min: 155.13
+- best: 74% at (alpha1=0.3, alpha2=0.3)
+- greedy point (alpha1=0.0, alpha2=0.0): 74%
 
-## 2. Base Generation Runs (`results/generation_results.json`)
+## 4) MedHallu Generation (Primary)
 
-| Label | Gate Mode | Curve Thresh | Entropy Thresh | Early Layer | Alpha | Accuracy | Gate Fire Rate | Repetition Rate | n |
-| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
-| 8B Baseline (greedy) | joint | 999.0 | 999.0 | 12 | 0.0 | 0.48 | 0.0000 | 0.00 | 50 |
-| 8B SLED + entropy (H=4.5) | sled_entropy | 0.0 | 4.5 | 12 | 0.3 | 0.44 | 0.0467 | 0.00 | 50 |
-| 8B SLED + entropy (H=5.0) | sled_entropy | 0.0 | 5.0 | 12 | 0.3 | 0.46 | 0.0243 | 0.00 | 50 |
-
-## 3. N=100 Four-Config Sweep (`results/generation_results_n100_4configs.json`)
-
-| Label | Gate Mode | Curve Thresh | Entropy Thresh | Early Layer | Alpha | Accuracy | Gate Fire Rate | Repetition Rate | n |
-| :-- | :-- | --: | --: | --: | --: | --: | --: | --: | --: |
-| Baseline (greedy) | joint | 999.0 | 999.0 | 12 | 0.0 | 0.35 | 0.0000 | 0.00 | 100 |
-| SLED + entropy gate (H=3.0) | sled_entropy | 0.0 | 3.0 | 12 | 0.3 | 0.34 | 0.2755 | 0.05 | 100 |
-| SLED + entropy gate (H=3.5) | sled_entropy | 0.0 | 3.5 | 12 | 0.3 | 0.36 | 0.1866 | 0.04 | 100 |
-| SLED + entropy gate (H=4.0) | sled_entropy | 0.0 | 4.0 | 12 | 0.3 | 0.34 | 0.1219 | 0.01 | 100 |
-
-## 4. Grid Search (`results/grid_search_results.json`)
-
-### 4.1 Baseline
-
-- baseline_accuracy: 0.44
-
-### 4.2 Phase 1 (20 runs)
-
-All phase1 runs use: `alpha=0.3`, `early_layer=8`.
-
-| # | curve_thresh | entropy_thresh | accuracy | gate_fire_rate | repetition_rate |
-| --: | --: | --: | --: | --: | --: |
-| 1 | 0.01 | 2.0 | 0.4333 | 0.0833 | 0.0 |
-| 2 | 0.01 | 2.5 | 0.4333 | 0.0000 | 0.0 |
-| 3 | 0.01 | 3.0 | 0.4333 | 0.0000 | 0.0 |
-| 4 | 0.01 | 3.5 | 0.4333 | 0.0000 | 0.0 |
-| 5 | 0.02 | 2.0 | 0.4333 | 0.0833 | 0.0 |
-| 6 | 0.02 | 2.5 | 0.4333 | 0.0000 | 0.0 |
-| 7 | 0.02 | 3.0 | 0.4333 | 0.0000 | 0.0 |
-| 8 | 0.02 | 3.5 | 0.4333 | 0.0000 | 0.0 |
-| 9 | 0.03 | 2.0 | 0.4333 | 0.0833 | 0.0 |
-| 10 | 0.03 | 2.5 | 0.4333 | 0.0000 | 0.0 |
-| 11 | 0.03 | 3.0 | 0.4333 | 0.0000 | 0.0 |
-| 12 | 0.03 | 3.5 | 0.4333 | 0.0000 | 0.0 |
-| 13 | 0.05 | 2.0 | 0.4333 | 0.0833 | 0.0 |
-| 14 | 0.05 | 2.5 | 0.4333 | 0.0000 | 0.0 |
-| 15 | 0.05 | 3.0 | 0.4333 | 0.0000 | 0.0 |
-| 16 | 0.05 | 3.5 | 0.4333 | 0.0000 | 0.0 |
-| 17 | 0.07 | 2.0 | 0.4333 | 0.0000 | 0.0 |
-| 18 | 0.07 | 2.5 | 0.4333 | 0.0000 | 0.0 |
-| 19 | 0.07 | 3.0 | 0.4333 | 0.0000 | 0.0 |
-| 20 | 0.07 | 3.5 | 0.4333 | 0.0000 | 0.0 |
-
-### 4.3 Phase 2 (12 runs)
-
-All phase2 runs use: `curve_thresh=0.01`, `entropy_thresh=2.0`.
-
-| # | early_layer | alpha | accuracy | gate_fire_rate | repetition_rate |
-| --: | --: | --: | --: | --: | --: |
-| 1 | 4 | 0.1 | 0.4333 | 0.0833 | 0.0 |
-| 2 | 4 | 0.3 | 0.4000 | 0.0833 | 0.0 |
-| 3 | 4 | 0.5 | 0.4000 | 0.0867 | 0.0 |
-| 4 | 8 | 0.1 | 0.4333 | 0.0833 | 0.0 |
-| 5 | 8 | 0.3 | 0.4333 | 0.0833 | 0.0 |
-| 6 | 8 | 0.5 | 0.4000 | 0.0683 | 0.0 |
-| 7 | 12 | 0.1 | 0.4333 | 0.0833 | 0.0 |
-| 8 | 12 | 0.3 | 0.4667 | 0.1100 | 0.0 |
-| 9 | 12 | 0.5 | 0.4333 | 0.1167 | 0.0 |
-| 10 | 16 | 0.1 | 0.4333 | 0.0833 | 0.0 |
-| 11 | 16 | 0.3 | 0.4333 | 0.0833 | 0.0 |
-| 12 | 16 | 0.5 | 0.4000 | 0.0933 | 0.0 |
-
-## 5. Best-of-N (`results/bon_results.json`)
-
-| Label | n_bon | Temperature | Accuracy | Repetition Rate | n_questions |
-| :-- | --: | --: | --: | --: | --: |
-| BoN-1 T=0.3 | 1 | 0.3 | 0.30 | 0.00 | 50 |
-| BoN-3 T=0.3 | 3 | 0.3 | 0.28 | 0.02 | 50 |
-| BoN-5 T=0.3 | 5 | 0.3 | 0.28 | 0.00 | 50 |
-
-## 6. Instruct Sweep (`results/instruct_results.json`)
-
-| Label | Accuracy | Repetition Rate | Strategy Dist | n |
-| :-- | --: | --: | :-- | --: |
-| 7. Semantic Majority BoN (T=0.4, n=5) | 0.70 | 0.00 | semantic_majority_voting: 1.0 | 50 |
-| 8. CoVe (2 checks) | 0.60 | 0.04 | cove: 1.0 | 50 |
-| 9. GADR-2 Learned Router | 0.74 | 0.00 | gadr2_greedy_general: 1.0 | 50 |
-
-## 7. ITI Sweep (`results/iti_results.json`)
-
-| Label | Threshold | Accuracy | Repetition Rate | n |
-| :-- | --: | --: | --: | --: |
-| ITI alpha=0.5 | 0.55 | 0.80 | 0.02 | 50 |
-| ITI alpha=0.5 | 0.65 | 0.72 | 0.02 | 50 |
-| ITI alpha=1.0 | 0.55 | 0.80 | 0.02 | 50 |
-| ITI alpha=1.0 | 0.65 | 0.70 | 0.02 | 50 |
-| ITI alpha=2.0 | 0.55 | 0.78 | 0.04 | 50 |
-| ITI alpha=2.0 | 0.65 | 0.70 | 0.04 | 50 |
-
-## 8. SelfCheck Evaluation (`results/selfcheck_results.json`)
-
-- dataset: truthful_qa:generation:validation
-- n: 50
-- k_samples: 4
-- selfcheck_similarity_threshold: 0.7
-- reference_threshold: 0.65
-- qa_accuracy: 0.72
-- qa_rep_rate: 0.0
-- detector_accuracy: 0.74
-- detector_precision: 0.5556
-- detector_recall: 0.3571
-- detector_f1: 0.4348
-- mean_confidence: 0.8036
-- runtime_min: 23.69
-- counts: tp=5, fp=4, tn=32, fn=9
-
-## 9. Online Comparison (`results/online_results.json`)
-
-| Model | n | Greedy Acc@0.55 | Greedy Acc@0.65 | CoVe Acc@0.55 | CoVe Acc@0.65 | Delta@0.55 | Delta@0.65 | Greedy Rep | CoVe Rep | Runtime (min) |
-| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: | --: |
-| Llama-3.3-70B | 50 | 0.84 | 0.74 | 0.78 | 0.66 | -0.06 | -0.08 | 0.04 | 0.10 | 40.5 |
-| Llama-4-Scout-17B | 50 | 0.80 | 0.68 | 0.76 | 0.56 | -0.04 | -0.12 | 0.02 | 0.10 | 11.8 |
-| Qwen3-32B | 50 | 0.84 | 0.70 | 0.82 | 0.70 | -0.02 | 0.00 | 0.02 | 0.04 | 7.5 |
-| GPT-OSS-120B | 50 | 0.80 | 0.62 | 0.76 | 0.56 | -0.04 | -0.06 | 0.02 | 0.02 | 11.2 |
-
-## 10. MedHallu Generation Evaluation (Primary) (`results/medhallu_generation_results.json`)
+Source: `results/medhallu_generation_results.json`
 
 - dataset: UTAustin-AIHealth/MedHallu pqa_artificial train
 - metric: cosine_similarity_to_ground_truth
-- threshold: 0.65
 - n_target: 50
+- threshold: 0.65
 - runtime_min: 112.47
 
-| Strategy | n_used | n_skipped | Accuracy | Repetition Rate | Runtime (min) |
-| :-- | --: | --: | --: | --: | --: |
-| greedy | 50 | 0 | 0.50 | 0.00 | 11.11 |
-| cove | 50 | 0 | 0.50 | 0.02 | 38.40 |
-| gadr2_cured | 50 | 0 | 0.54 | 0.02 | 22.29 |
-| cove_rag | 50 | 0 | 0.50 | 0.00 | 40.18 |
-| delta_dola | 50 | 0 | 0.52 | 0.00 | 11.58 |
+| method | acc | rep | n |
+|---|---:|---:|---:|
+| greedy | 50% | 0% | 50 |
+| cove | 50% | 2% | 50 |
+| cove_rag | 50% | 0% | 50 |
+| delta_dola | 52% | 0% | 50 |
+| gadr2_cured | 54% | 2% | 50 |
 
-## 11. Latest Verified Rerun Outputs (Log/Terminal-Backed)
+## 5) MedHallu Ablations
 
-### 11.1 Phase 1 rerun (`experiments/eval_calibration_phase1.py`)
+Source: `results/medhallu_ablation_results.json`
 
-From successful terminal run (latest verified completion):
+- greedy_baseline: 50%
 
-- calibration proof:
-- model: meta-llama/Llama-3.2-3B
-- ece: 0.2518
-- entropy_accuracy_correlation: 0.0058
-- mean_entropy: 4.0395
-- mean_top1_prob: 0.2793
-- accuracy: 0.35
-- n_samples: 100
-- JSD summary:
-- mean_jsd_all_layers_vs_final: 0.5329
-- mean_jsd_early_lt8: 0.6652
-- mean_jsd_mid_8_to_20: 0.5976
-- mean_jsd_late_ge20: 0.2708
+| method | acc | rep | n |
+|---|---:|---:|---:|
+| iti_alpha0.5 | 52% | 4% | 50 |
+| sled | 52% | 0% | 50 |
+| bon3_t0.3 | 48% | 0% | 50 |
 
-Note: this rerun snapshot differs from the older multi-model JSON in `results/calibration_results.json`.
+## 6) MedHallu MC Chooser (Ablation)
 
-### 11.2 Low-threshold gate diagnostic (`experiments/check_low_threshold.py`)
+Source: `results/medhallu_results.json`
 
-From successful rerun output:
+- chooser: multiple_choice_by_candidate_loglikelihood
+- n_target: 50
+- runtime_min: 17.99
 
-- prompt: "The capital of Canada is"
-- gate_fire_rate: 60.0%
-- generated sample starts with: "Ottawa, Ontario. The capital of Canada is located in the province called Quebec..."
+| method | acc | mean_margin | abstain_band_rate | n |
+|---|---:|---:|---:|---:|
+| greedy_mc | 2% | -1.0944 | 2% | 50 |
+| delta_dola_mc_a10.3_a20.3 | 6% | -1.1638 | 2% | 50 |
 
-### 11.3 Orchestrated sequence completion (`experiments/pipeline_remaining_steps.ps1`)
+## 7) Other Benchmark Snapshots
 
-From `results/logs/pipeline_remaining_steps_20260403_023407.log` and completion marker:
+### Instruct (`results/instruct_results.json`)
 
-- `[2026-04-03T02:34:10] DONE  learn_router`
-- `[2026-04-03T03:35:07] DONE  eval_instruct`
-- `[2026-04-03T04:47:58] DONE  eval_medhallu`
-- `results/logs/pipeline_remaining_steps.done`: `COMPLETED 2026-04-03T04:47:58`
+| method | acc | rep | n |
+|---|---:|---:|---:|
+| Semantic Majority BoN (T=0.4, n=5) | 70% | 0% | 50 |
+| CoVe (2 checks) | 60% | 4% | 50 |
+| GADR-2 Learned Router | 74% | 0% | 50 |
 
-Router training snapshot in that orchestrated run:
+### ITI (`results/iti_results.json`)
 
-- routing rows loaded: 100
-- class distribution: greedy=93, iti=4, cove=3
-- Decision Tree CV acc: 0.920
-- Logistic baseline CV acc: 0.930
-- saved router: `results/router_model.joblib`
+| label | threshold | acc | rep | n |
+|---|---:|---:|---:|---:|
+| ITI alpha=0.5 | 0.55 | 80% | 2% | 50 |
+| ITI alpha=0.5 | 0.65 | 72% | 2% | 50 |
+| ITI alpha=1.0 | 0.55 | 80% | 2% | 50 |
+| ITI alpha=1.0 | 0.65 | 70% | 2% | 50 |
+| ITI alpha=2.0 | 0.55 | 78% | 4% | 50 |
+| ITI alpha=2.0 | 0.65 | 70% | 4% | 50 |
 
-### 11.4 Latest focused reruns (terminal-verified)
+### SelfCheck (`results/selfcheck_results.json`)
 
-`src/learn_router.py` rerun (Apr 3, 2026, latest):
+- qa_accuracy: 72%
+- qa_rep_rate: 0%
+- detector_accuracy: 74%
+- detector_f1: 0.4348
+- runtime_min: 23.69
 
-- routing rows loaded: 100
-- domain distribution: general=50, medical=50
-- class distribution: greedy=50, iti=25, cove=25
-- Decision Tree CV acc: 0.830 (chosen)
-- Logistic baseline CV acc: 0.780
+### Online CoVe vs Greedy (`results/online_results.json`)
 
-`experiments/eval_medhallu.py` rerun (Apr 3, 2026, latest):
+| model | greedy@0.65 | cove@0.65 | delta@0.65 |
+|---|---:|---:|---:|
+| Llama-3.3-70B | 74% | 66% | -8% |
+| Llama-4-Scout-17B | 68% | 56% | -12% |
+| Qwen3-32B | 70% | 70% | 0% |
+| GPT-OSS-120B | 62% | 56% | -6% |
 
-- `results/medhallu_results.json` rewritten at `2026-04-03 22:25:10`
-- strategy metrics and runtime are unchanged from Section 14 (`results/medhallu_results.json`).
+### Best-of-N (`results/bon_results.json`)
 
-## 12. High-Level Takeaways (Strictly from Current Artifacts)
+| label | acc | rep | n |
+|---|---:|---:|---:|
+| BoN-1 T=0.3 | 30% | 0% | 50 |
+| BoN-3 T=0.3 | 28% | 2% | 50 |
+| BoN-5 T=0.3 | 28% | 0% | 50 |
 
-1. Base-model SLED/entropy gating gave mixed gains; best shown in `grid_search_results.json` phase2 at early layer 12, alpha 0.3, accuracy 0.4667 vs baseline 0.44 (on that sweep setup).
-2. BoN on the base setup did not outperform `BoN-1` in this run snapshot.
-3. Instruct sweep: GADR-2 (0.74) outperformed Semantic Majority BoN (0.70) and CoVe (0.60) on this 50-sample run.
-4. ITI sweep at low alphas (0.5-2.0) stayed relatively stable with best 0.80 at threshold 0.55.
-5. Cross-model online CoVe generally underperformed greedy at threshold 0.65 in 3/4 models; Qwen3-32B was neutral (0.00 delta).
-6. Latest MedHallu generation framing (primary, n=50) shows gadr2_cured as best at 0.54, ahead of greedy/cove/cove_rag (0.50) and delta_dola (0.52).
-7. Latest corrected MedHallu MC framing (n=50) still shows low absolute MC chooser accuracy overall, with delta_dola (0.06) above greedy (0.02).
+### Calibration (`results/calibration_results.json`)
 
-## 13. MedHallu Detector-Style Evaluation (`results/archive/medhallu_detector_legacy_results.json`)
+| model | ece | entropy-acc corr | mean_entropy | mean_top1_prob | acc | n |
+|---|---:|---:|---:|---:|---:|---:|
+| meta-llama/Llama-3.1-8B | 0.2711 | 0.1413 | 3.3092 | 0.3456 | 48% | 50 |
+| meta-llama/Llama-3.2-3B | 0.0821 | -0.4211 | 3.5120 | 0.2140 | 35% | 100 |
+| Qwen/Qwen2.5-3B | 0.3121 | -0.0814 | 2.1040 | 0.4420 | 14% | 100 |
 
-Run metadata:
+## 8) Figures
 
-- script: `experiments/run_medhallu_eval.py`
-- dataset_id: `UTAustin-AIHealth/MedHallu`
-- subset: `pqa_artificial`
-- split: `train`
-- n_target: `50`
-- runtime_min: `118.83`
+Current files in `results/figures/`:
+- `fig1_entropy_compression.png` (250,856 bytes)
+- `fig2_method_comparison.png` (132,896 bytes)
+- `fig3_delta_dola_sweep.png` (130,404 bytes)
+- `fig4_routing.png` (128,739 bytes)
+- `fig5_cross_model_cove.png` (81,360 bytes)
 
-### 13.1 Strategy Metrics
+## 9) Important Notes
 
-| Strategy | n_used | n_skipped | Accuracy | Precision | F1 | Mean Margin | Rep Rate | Abstain Band Rate |
-| :-- | --: | --: | --: | --: | --: | --: | --: | --: |
-| greedy | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1448 | 0.00 | 0.24 |
-| cove | 50 | 0 | 0.20 | 0.20 | 0.3333 | -0.1544 | 0.02 | 0.28 |
-| gadr2 | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1508 | 0.02 | 0.24 |
-| cove_rag | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1475 | 0.00 | 0.20 |
-
-### 13.2 Detection Accuracy by Difficulty
-
-| Strategy | Easy | Medium | Hard |
-| :-- | --: | --: | --: |
-| greedy | 0.0714 (n=14) | 0.3158 (n=19) | 0.0588 (n=17) |
-| cove | 0.0714 (n=14) | 0.3684 (n=19) | 0.1176 (n=17) |
-| gadr2 | 0.0714 (n=14) | 0.2632 (n=19) | 0.1176 (n=17) |
-| cove_rag | 0.0714 (n=14) | 0.3158 (n=19) | 0.0588 (n=17) |
-
-### 13.3 Abstention Analysis
-
-Applied analysis text from run:
-
-- If `|margin| < 0.05` -> abstain (route to clinician or larger model)
-- expected precision gain claim in run output: `~38%`
-
-Observed abstain-band rates:
-
-- greedy: 0.24
-- cove: 0.28
-- gadr2: 0.24
-- cove_rag: 0.20
-
-## 14. Final MedHallu MC Evaluation (Correct Framing, n=50)
-
-This section is the current final MedHallu result and supersedes earlier detector-style framing when reporting the MC chooser benchmark.
-
-Source artifacts:
-
-- `results/medhallu_results.json`
-- `results/archive/medhallu_results_snapshot_n50.json`
-
-Run metadata:
-
-- dataset_id: `UTAustin-AIHealth/MedHallu`
-- subset: `pqa_artificial`
-- split: `train`
-- chooser: `multiple_choice_by_candidate_loglikelihood`
-- n_target: `50`
-- runtime_min: `17.99`
-- delta_dola config: `alpha1=0.3, alpha2=0.3, early_layer_idx=7, mid_layer_idx=14, top_k=200`
-
-### 14.1 Overall MC Metrics
-
-| Strategy | n_used | n_skipped | Accuracy | Mean Margin | Abstain Band Rate (`|margin| < 0.05`) |
-| :-- | --: | --: | --: | --: | --: |
-| greedy_mc | 50 | 0 | 0.02 | -1.0944 | 0.02 |
-| delta_dola_mc_a10.3_a20.3 | 50 | 0 | 0.06 | -1.1638 | 0.02 |
-
-### 14.2 MC Accuracy by Difficulty
-
-| Strategy | Easy | Medium | Hard |
-| :-- | --: | --: | --: |
-| greedy_mc | 0.0000 (n=14) | 0.0526 (n=19) | 0.0000 (n=17) |
-| delta_dola_mc_a10.3_a20.3 | 0.0000 (n=14) | 0.1053 (n=19) | 0.0588 (n=17) |
-
-### 14.3 Delta vs Greedy (MC)
-
-- absolute accuracy gain: `+0.04` (from `0.02` to `0.06`)
-- relative accuracy gain: `+200%` on this 50-sample run
-- mean margin remained negative for both strategies, indicating the model still tends to favor hallucinated candidates under this likelihood-based chooser setup.
+- SelfCheck is reported for TruthfulQA only in current artifacts.
+- MedHallu does not currently include a SelfCheck strategy run in `results/medhallu_generation_results.json`.
