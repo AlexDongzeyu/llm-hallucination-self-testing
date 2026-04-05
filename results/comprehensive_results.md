@@ -6,7 +6,10 @@ This file is a short summary. Full detail is in `../raw_results.md`.
 
 ## Topline Summary
 
-- TruthfulQA DeLTa+DoLa sweep (5x5): best 74% at (alpha1=0.3, alpha2=0.3); the greedy point is also 74%.
+- Entropy profile is non-monotonic: `H1=0.0806 -> H7=10.8342 -> H28=0.8516`.
+- Both delta definitions are reported: `L1->L28 mean dH=+0.7711 (dH<0=16.7%)` and `L7->L28 mean dH=-9.9826 (dH<0=100%)`.
+- 3B late-layer logit linearity (`L14->L28`, top-50) is moderate: `mean R2=0.5557`.
+- TruthfulQA DeLTa+DoLa sweep (5x5): max accuracy is 74%, including (alpha1=0.0, alpha2=0.0) and (alpha1=0.3, alpha2=0.3).
 - MedHallu generation (primary): best method is `gadr2_cured` at 54% (greedy 50%).
 - MedHallu ablations: ITI alpha0.5 = 52%, SLED = 52%, BoN-3 = 48%.
 - MedHallu MC chooser (ablation): delta_dola 6%, greedy 2%.
@@ -14,6 +17,7 @@ This file is a short summary. Full detail is in `../raw_results.md`.
 ## Core Artifact Files
 
 - `entropy_by_layer.json`
+- `logit_linearity_3b.json`
 - `truthfulqa_delta_dola_sweep.json`
 - `medhallu_generation_results.json`
 - `medhallu_ablation_results.json`
@@ -49,6 +53,7 @@ This file is a short summary. Full detail is in `../raw_results.md`.
 ## Repro Commands
 
 ```bash
+python -u experiments/compute_logit_linearity.py --n 30 --mid-layer 14 --top-k 50
 python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
 python -u experiments/run_delta_dola_complete_grid.py --n 50 --threshold 0.65
 python -u experiments/run_medhallu_ablations.py

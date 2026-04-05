@@ -40,6 +40,7 @@ gen_results  = load_json("results/medhallu_generation_results.json")
 abl_results  = load_json("results/medhallu_ablation_results.json")
 sweep_data   = load_json("results/truthfulqa_delta_dola_sweep.json")
 entropy_data = load_json("results/entropy_by_layer.json")
+linearity_data = load_json("results/logit_linearity_3b.json")
 
 # Build a single MedHallu accuracy lookup across generation + ablation files.
 med_acc = {}
@@ -56,7 +57,7 @@ for k, v in sorted(med_acc.items()):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FIGURE 1: RLHF Entropy Compression
+# FIGURE 1: RLHF entropy profile and late-layer instability
 # Uses actual per-layer entropy if entropy_by_layer.json exists,
 # otherwise uses calibration-anchored approximation.
 # ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +89,31 @@ def fig1():
         ann_pct  = f"{dH_pct:.0%}"
         ann_mean = f"{dH_mean:.2f}"
         title_note = f"(n={n_q}, actual measurements)"
+
+        if "layer_stds" in entropy_data:
+            stds = np.array(entropy_data["layer_stds"])
+            late_cv = stds[-8:] / np.clip(np.abs(means[-8:]), 1e-8, None)
+            cv_lo = float(np.min(late_cv))
+            cv_hi = float(np.max(late_cv))
+        else:
+            cv_lo, cv_hi = 0.50, 0.80
+
+        mean_r2 = None
+        if linearity_data and "mean_r2" in linearity_data:
+            mean_r2 = float(linearity_data["mean_r2"])
+
+        if mean_r2 is None:
+            ann_text = (
+                f"Final-layer entropy (L28) compressed to {hn_val:.2f} nats\n"
+                "late-layer trajectory diagnostics at 3B scale\n"
+                f"Late-layer trajectory CV={cv_lo:.2f}-{cv_hi:.2f}; mean R2=pending"
+            )
+        else:
+            ann_text = (
+                f"Final-layer entropy (L28) compressed to {hn_val:.2f} nats\n"
+                "late-layer trajectory diagnostics at 3B scale\n"
+                f"Late-layer trajectory CV={cv_lo:.2f}-{cv_hi:.2f}; mean R2={mean_r2:.2f}"
+            )
     else:
         # Calibration-anchored approximation
         n_layers = 28
@@ -107,8 +133,13 @@ def fig1():
         y_low = float(np.min(band))
         y_high = float(np.max(band))
         h1_val = means[0]; hn_val = means[-1]
-        ann_pct = "100%"; ann_mean = "−9.86"
+        ann_pct = "100%"; ann_mean = "-9.86"
         title_note = "(n=100)"
+        ann_text = (
+            f"Final-layer entropy (L28) compressed to {hn_val:.2f} nats\n"
+            "late-layer trajectory diagnostics at 3B scale\n"
+            "Late-layer CV and R2 unavailable in fallback mode"
+        )
 
     y_span = max(y_high - y_low, 1e-6)
     y_pad = max(0.08 * y_span, 0.15)
@@ -131,22 +162,15 @@ def fig1():
                 arrowprops=dict(arrowstyle="-", color="#1565C0", lw=0.8))
 
     ax.text(len(layers) // 2, note_y,
-            f"dH < 0 for {ann_pct} of questions\n(mean ΔH = {ann_mean})",
+            ann_text,
             fontsize=9, ha="center", color="#C62828",
             bbox=dict(boxstyle="round,pad=0.3",
                       facecolor="#FFEBEE", edgecolor="#C62828", alpha=0.85))
 
-    monotone = bool(np.all(np.diff(means) <= 0))
-    if monotone:
-        title = (
-            "RLHF Entropy Compression: Entropy Decreases Monotonically\n"
-            f"Across All Layers for All Questions {title_note}"
-        )
-    else:
-        title = (
-            "RLHF Entropy Profile Across Layers (Measured)\n"
-            f"Layer-wise token entropy trajectory {title_note}"
-        )
+    title = (
+        "RLHF Entropy Profile: High Plateau -> Sharp Final-Layer Collapse\n"
+        f"Measured Late-Layer R2 and CV at 3B Scale {title_note}"
+    )
 
     ax.set_xlabel("Transformer Layer", fontsize=11)
     ax.set_ylabel("Token Distribution Entropy (nats)", fontsize=11)

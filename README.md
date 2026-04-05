@@ -6,9 +6,14 @@ Inference-time hallucination mitigation experiments for RLHF-tuned LLMs.
 
 Model: Llama-3.2-3B-Instruct.
 
-- Entropy extraction (`n=30`): `H1=0.0806`, `H_last=0.8516`, `mean dH=+0.7711`, `dH<0=16.7%`.
+- Entropy shape (`n=30`): `H1=0.0806 -> H7=10.8342 -> H28=0.8516`; `L1->L28 mean dH=+0.7711 (dH<0=16.7%)`, `L7->L28 mean dH=-9.9826 (dH<0=100%)`.
+- 3B late-layer diagnostics (`L14->L28`, top-50 logits, `n=30`): `mean R2=0.5557`, `median R2=0.5770`, `std=0.0696`; late-layer CV (L21-L28) `0.582-0.838`.
 - TruthfulQA DeLTa+DoLa 5x5 sweep (`n=50`, threshold `0.65`): best `74%` at `(alpha1=0.3, alpha2=0.3)`, and the greedy point `(0.0, 0.0)` is also `74%`.
 - MedHallu generation (`n=50`, threshold `0.65`): best strategy is `gadr2_cured` at `54%`.
+
+## Metric Note
+
+- Do not directly compare Alex TruthfulQA cosine-threshold accuracy with Ben ALTA `%True x %Info`; they are different metrics on different models.
 
 ### MedHallu Generation Results
 
@@ -33,6 +38,7 @@ Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) a
 ## Canonical Files
 
 - `results/entropy_by_layer.json`
+- `results/logit_linearity_3b.json`
 - `results/truthfulqa_delta_dola_sweep.json`
 - `results/medhallu_generation_results.json`
 - `results/medhallu_ablation_results.json`
@@ -45,6 +51,9 @@ Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) a
 ```bash
 # MedHallu generation (primary)
 python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
+
+# 3B late-layer logit linearity diagnostic
+python -u experiments/compute_logit_linearity.py --n 30 --mid-layer 14 --top-k 50
 
 # TruthfulQA DeLTa+DoLa full grid
 python -u experiments/run_delta_dola_complete_grid.py --n 50 --threshold 0.65

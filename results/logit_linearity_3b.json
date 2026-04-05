@@ -1,0 +1,251 @@
+{
+  "model": "meta-llama/Llama-3.2-3B-Instruct",
+  "n_questions": 30,
+  "mid_layer": 14,
+  "top_k": 50,
+  "mean_r2": 0.5556615565101362,
+  "median_r2": 0.5769947076821358,
+  "std_r2": 0.06955707920081039,
+  "per_question": [
+    {
+      "mean_r2": 0.5951973953838197,
+      "median_r2": 0.6168321686078692,
+      "std_r2": 0.13767788779186804,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5045051502147344,
+      "median_r2": 0.5128393750826528,
+      "std_r2": 0.17908270382244643,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5914858701151903,
+      "median_r2": 0.6041277387371802,
+      "std_r2": 0.1911728686521347,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.47363019332520706,
+      "median_r2": 0.46841218662981804,
+      "std_r2": 0.12631405468915916,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5369348820707756,
+      "median_r2": 0.5281950485775271,
+      "std_r2": 0.1604744179910991,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.45185808355894447,
+      "median_r2": 0.4410154574197825,
+      "std_r2": 0.13929064487538464,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6033179616243705,
+      "median_r2": 0.6379669909977426,
+      "std_r2": 0.1684965944602504,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6667889933357336,
+      "median_r2": 0.6892122169691837,
+      "std_r2": 0.12024201178880203,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6267002073946619,
+      "median_r2": 0.6456405544369196,
+      "std_r2": 0.14763823642916699,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.419294059629905,
+      "median_r2": 0.42789484487402907,
+      "std_r2": 0.1541057783136044,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.41649112593740084,
+      "median_r2": 0.3891679521876742,
+      "std_r2": 0.15434639884683884,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.44922391956842583,
+      "median_r2": 0.43805777842499455,
+      "std_r2": 0.17166708799694005,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5508611729067109,
+      "median_r2": 0.5491120741444474,
+      "std_r2": 0.15798153767890502,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5473383569944914,
+      "median_r2": 0.5861952600419174,
+      "std_r2": 0.15661085778498635,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.43377026844871625,
+      "median_r2": 0.4317125883662367,
+      "std_r2": 0.15416101192370216,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6114679961460014,
+      "median_r2": 0.6092796808422727,
+      "std_r2": 0.18318758364013124,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6275292822998428,
+      "median_r2": 0.6556646556192023,
+      "std_r2": 0.16149515544919818,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5943010626749454,
+      "median_r2": 0.56597283720205,
+      "std_r2": 0.2011811484532502,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5763080754106945,
+      "median_r2": 0.5594498198055635,
+      "std_r2": 0.1952444776901967,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.582050208572859,
+      "median_r2": 0.6328935468468367,
+      "std_r2": 0.1821963975973742,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6508626294712307,
+      "median_r2": 0.6773401379837446,
+      "std_r2": 0.1603335832145346,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5158180092225877,
+      "median_r2": 0.5148117059674902,
+      "std_r2": 0.1416879736377487,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5518525857073453,
+      "median_r2": 0.560723377982057,
+      "std_r2": 0.1261896887218451,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5130502404255479,
+      "median_r2": 0.5181261424979265,
+      "std_r2": 0.14367160438879628,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6453202221070576,
+      "median_r2": 0.6463549635481521,
+      "std_r2": 0.13631169399778045,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5909928307568965,
+      "median_r2": 0.5959929319858503,
+      "std_r2": 0.12435529165924497,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5737443641846328,
+      "median_r2": 0.6020748677123591,
+      "std_r2": 0.14017445033517914,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5652923047912557,
+      "median_r2": 0.5698948277096607,
+      "std_r2": 0.16131097380186615,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.5853039472244876,
+      "median_r2": 0.5840945876546108,
+      "std_r2": 0.1265583410646559,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    },
+    {
+      "mean_r2": 0.6185552957996101,
+      "median_r2": 0.6133236206288355,
+      "std_r2": 0.1174394477414744,
+      "n_layers_used": 15,
+      "layer_start": 14,
+      "layer_end": 28
+    }
+  ]
+}
