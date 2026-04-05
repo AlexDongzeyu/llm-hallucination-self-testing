@@ -9,9 +9,11 @@ Core generation module for Llama-3.2-3B-Instruct with:
 
 from pathlib import Path
 import re
+import time as _time
 
 import torch
 import numpy as np
+import requests
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer, util
 import joblib
@@ -82,6 +84,51 @@ def get_layer_logits_cached(input_ids, past_key_values=None):
     return np.array(all_logits), outputs.past_key_values
 
 
+def compute_delta_dola_logits(layer_logits: np.ndarray,
+                              alpha1: float = 0.3,
+                              alpha2: float = 0.3,
+                              early_layer_idx: int = 7,
+                              mid_layer_idx: int = 14,
+                              top_k: int = 200) -> np.ndarray:
+    """
+    Build hybrid logits from layer trajectory signals:
+    - DoLa: z_final - z_early
+    - DeLTa: linear extrapolation over mid->final layer trajectory
+    """
+    n_layers = int(layer_logits.shape[0])
+    z_final = layer_logits[-1].astype(np.float32, copy=False)
+
+    early_idx = min(max(int(early_layer_idx), 0), n_layers - 1)
+    z_early = layer_logits[early_idx].astype(np.float32, copy=False)
+    z_dola = z_final - z_early
+
+    reg_start = min(max(int(mid_layer_idx), 0), max(n_layers - 2, 0))
+    reg_layers = np.arange(reg_start, n_layers, dtype=np.int32)
+
+    z_delta = z_final.copy()
+    if len(reg_layers) >= 2:
+        k = min(max(int(top_k), 1), z_final.shape[0])
+        top_idx = np.argpartition(z_final, -k)[-k:]
+
+        y = layer_logits[reg_layers][:, top_idx].astype(np.float32, copy=False)
+        l_raw = reg_layers.astype(np.float32)
+        l_min = float(l_raw.min())
+        l_span = float(l_raw.max() - l_raw.min())
+        l_norm = (l_raw - l_min) / max(l_span, 1.0)
+        l_mean = float(l_norm.mean())
+        l_center = l_norm - l_mean
+        denom = float(np.sum(l_center * l_center))
+
+        if denom > 1e-8:
+            y_mean = y.mean(axis=0)
+            beta1 = np.sum(l_center[:, None] * (y - y_mean[None, :]), axis=0) / denom
+            beta0 = y_mean - beta1 * l_mean
+            l_virt = 1.0 + 1.0 / max(float(n_layers - reg_start), 1.0)
+            z_delta[top_idx] = beta0 + beta1 * l_virt
+
+    return z_final + alpha1 * (z_delta - z_final) + alpha2 * (z_dola - z_final)
+
+
 def compute_entropy(logits: np.ndarray) -> float:
     """Shannon entropy of the output distribution. High = uncertain."""
     shifted = logits - np.max(logits)
@@ -143,6 +190,48 @@ def greedy_generate(prompt_formatted: str, max_new_tokens: int = 80) -> str:
         next_t = torch.tensor([[next_id]]).to(model.device)
         layer_logits, past_kv = get_layer_logits_cached(next_t, past_kv)
     return tokenizer.decode(generated, skip_special_tokens=True)
+
+
+def delta_dola_generate(prompt_formatted: str,
+                        max_new_tokens: int = 80,
+                        alpha1: float = 0.3,
+                        alpha2: float = 0.3,
+                        early_layer_idx: int = 7,
+                        mid_layer_idx: int = 14,
+                        top_k: int = 200) -> dict:
+    """Hybrid DeLTa+DoLa decoding with KV-cached per-layer logits."""
+    input_ids = tokenizer.encode(prompt_formatted, return_tensors="pt").to(model.device)
+    layer_logits, past_kv = get_layer_logits_cached(input_ids, None)
+
+    generated = []
+    for _ in range(max_new_tokens):
+        hybrid = compute_delta_dola_logits(
+            layer_logits,
+            alpha1=alpha1,
+            alpha2=alpha2,
+            early_layer_idx=early_layer_idx,
+            mid_layer_idx=mid_layer_idx,
+            top_k=top_k,
+        )
+        logits = apply_repetition_penalty(hybrid, generated)
+        next_id = int(np.argmax(logits))
+        generated.append(next_id)
+
+        if next_id == tokenizer.eos_token_id:
+            break
+
+        next_t = torch.tensor([[next_id]], device=model.device)
+        layer_logits, past_kv = get_layer_logits_cached(next_t, past_kv)
+
+    return {
+        "text": tokenizer.decode(generated, skip_special_tokens=True),
+        "strategy": f"delta_dola_a1{alpha1}_a2{alpha2}",
+        "alpha1": alpha1,
+        "alpha2": alpha2,
+        "early_layer_idx": early_layer_idx,
+        "mid_layer_idx": mid_layer_idx,
+        "top_k": top_k,
+    }
 
 
 # ── Strategy 2: SLED + entropy gate ──────────────────────────────────────────
@@ -388,6 +477,87 @@ def cove_generate(question: str, max_new_tokens: int = 80) -> dict:
         "draft": draft,
         "n_verif": len(vqs),
     }
+
+
+def _pubmed_search(query: str, n: int = 2) -> str:
+    """Fetch short PubMed abstract context with NCBI E-utilities (no API key)."""
+    try:
+        resp = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+            params={
+                "db": "pubmed",
+                "term": query,
+                "retmax": n,
+                "retmode": "json",
+                "sort": "relevance",
+            },
+            timeout=5,
+        )
+        ids = resp.json().get("esearchresult", {}).get("idlist", [])
+        if not ids:
+            return ""
+
+        abstracts = requests.get(
+            "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi",
+            params={
+                "db": "pubmed",
+                "id": ",".join(ids),
+                "rettype": "abstract",
+                "retmode": "text",
+            },
+            timeout=8,
+        ).text
+        _time.sleep(0.35)
+        return abstracts[:800]
+    except Exception:
+        return ""
+
+
+def cove_rag_generate(question: str, max_new_tokens: int = 80) -> dict:
+    """
+    CoVe + PubMed retrieval:
+    draft answer -> verification questions -> evidence-backed verification -> synthesis.
+    """
+    prompt = format_instruct_prompt(question)
+    draft = greedy_generate(prompt, max_new_tokens=60)
+    if not draft.strip():
+        return {"text": "", "strategy": "cove_rag_failed"}
+
+    vq_prompt = format_instruct_prompt(
+        f"I answered this medical question: '{question}'\n"
+        f"My answer was: '{draft}'\n"
+        "Write exactly 2 short factual questions to verify this answer. "
+        "One question per line. Each must end with '?'"
+    )
+    vq_text = greedy_generate(vq_prompt, max_new_tokens=60)
+    vqs = [line.strip() for line in vq_text.split("\n") if line.strip() and "?" in line][:2]
+
+    if not vqs:
+        return {"text": draft, "strategy": "cove_rag_no_vqs"}
+
+    verif_blocks = []
+    for vq in vqs:
+        evidence = _pubmed_search(vq, n=2)
+
+        if evidence:
+            ctx_prompt = format_instruct_prompt(
+                f"Based on this PubMed evidence:\n{evidence[:600]}\n\n"
+                f"Answer this question in 1-2 sentences: {vq}"
+            )
+        else:
+            ctx_prompt = format_instruct_prompt(vq)
+
+        vq_answer = greedy_generate(ctx_prompt, max_new_tokens=50)
+        verif_blocks.append(f"Verification Q: {vq}\nEvidence-based A: {vq_answer}")
+
+    final_prompt = format_instruct_prompt(
+        f"Medical question: {question}\n"
+        f"Initial answer: {draft}\n\n"
+        f"Evidence-checked facts:\n{chr(10).join(verif_blocks)}\n\n"
+        "Based on the verified facts above, provide the accurate final answer:"
+    )
+    final = greedy_generate(final_prompt, max_new_tokens=max_new_tokens)
+    return {"text": final or draft, "strategy": "cove_rag_medical"}
 
 
 # ── Strategy 4: UDHR — Universal Dynamic Hallucination Reducer ───────────────
@@ -718,3 +888,7 @@ if __name__ == "__main__":
     print(f"Strategy: {result['strategy']} "
           f"(entropy={result['entropy']}, jsd={result['jsd']})")
     print("\nExpected: 'Paris' routed to GREEDY (low entropy, confident answer)")
+
+
+    # Published name: CURED = Curvature-Informed Routing and Entropy-based Decoding
+    cured_generate = gadr2_generate  # CURED is the paper name for GADR-2

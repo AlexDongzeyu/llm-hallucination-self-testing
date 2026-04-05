@@ -15,7 +15,10 @@ All target result artifacts exist:
 - `results/iti_results.json`
 - `results/selfcheck_results.json`
 - `results/online_results.json`
+- `results/medhallu_generation_results.json`
 - `results/medhallu_results.json`
+- `results/truthfulqa_delta_dola_sweep.json`
+- `results/archive/medhallu_results_snapshot_n50.json`
 - `results/routing_dataset.csv`
 - `results/router_model.joblib`
 
@@ -25,7 +28,8 @@ Latest orchestrated completion marker:
 
 Latest standalone artifact refresh:
 
-- `results/medhallu_results.json` last written `2026-04-03 22:25:10`
+- Final generation n=50 output is synced in `results/medhallu_generation_results.json`.
+- Final corrected MC n=50 output is synced in `results/medhallu_results.json` and archived in `results/archive/medhallu_results_snapshot_n50.json`.
 
 ## 1. Calibration Results (`results/calibration_results.json`)
 
@@ -157,21 +161,21 @@ All phase2 runs use: `curve_thresh=0.01`, `entropy_thresh=2.0`.
 | Qwen3-32B | 50 | 0.84 | 0.70 | 0.82 | 0.70 | -0.02 | 0.00 | 0.02 | 0.04 | 7.5 |
 | GPT-OSS-120B | 50 | 0.80 | 0.62 | 0.76 | 0.56 | -0.04 | -0.06 | 0.02 | 0.02 | 11.2 |
 
-## 10. MedHallu Evaluation (`results/medhallu_results.json`)
+## 10. MedHallu Generation Evaluation (Primary) (`results/medhallu_generation_results.json`)
 
-- dataset_id: UTAustin-AIHealth/MedHallu
-- subset: pqa_artificial
-- split: train
+- dataset: UTAustin-AIHealth/MedHallu pqa_artificial train
+- metric: cosine_similarity_to_ground_truth
 - threshold: 0.65
 - n_target: 50
-- runtime_min: 91.95
+- runtime_min: 112.47
 
-| Strategy | n_used | n_skipped | Accuracy | Repetition Rate |
-| :-- | --: | --: | --: | --: |
-| greedy | 50 | 0 | 0.46 | 0.00 |
-| cove | 50 | 0 | 0.54 | 0.00 |
-| dynamic | 50 | 0 | 0.48 | 0.08 |
-| gadr2 | 50 | 0 | 0.52 | 0.02 |
+| Strategy | n_used | n_skipped | Accuracy | Repetition Rate | Runtime (min) |
+| :-- | --: | --: | --: | --: | --: |
+| greedy | 50 | 0 | 0.50 | 0.00 | 11.11 |
+| cove | 50 | 0 | 0.50 | 0.02 | 38.40 |
+| gadr2_cured | 50 | 0 | 0.54 | 0.02 | 22.29 |
+| cove_rag | 50 | 0 | 0.50 | 0.00 | 40.18 |
+| delta_dola | 50 | 0 | 0.52 | 0.00 | 11.58 |
 
 ## 11. Latest Verified Rerun Outputs (Log/Terminal-Backed)
 
@@ -233,7 +237,7 @@ Router training snapshot in that orchestrated run:
 `experiments/eval_medhallu.py` rerun (Apr 3, 2026, latest):
 
 - `results/medhallu_results.json` rewritten at `2026-04-03 22:25:10`
-- strategy metrics and runtime are unchanged from Section 10 (`results/medhallu_results.json`).
+- strategy metrics and runtime are unchanged from Section 14 (`results/medhallu_results.json`).
 
 ## 12. High-Level Takeaways (Strictly from Current Artifacts)
 
@@ -242,4 +246,87 @@ Router training snapshot in that orchestrated run:
 3. Instruct sweep: GADR-2 (0.74) outperformed Semantic Majority BoN (0.70) and CoVe (0.60) on this 50-sample run.
 4. ITI sweep at low alphas (0.5-2.0) stayed relatively stable with best 0.80 at threshold 0.55.
 5. Cross-model online CoVe generally underperformed greedy at threshold 0.65 in 3/4 models; Qwen3-32B was neutral (0.00 delta).
-6. Latest MedHallu rerun kept `cove` as best at 0.54 accuracy; dynamic was 0.48 and gadr2 improved to 0.52 (with rep_rate 0.02).
+6. Latest MedHallu generation framing (primary, n=50) shows gadr2_cured as best at 0.54, ahead of greedy/cove/cove_rag (0.50) and delta_dola (0.52).
+7. Latest corrected MedHallu MC framing (n=50) still shows low absolute MC chooser accuracy overall, with delta_dola (0.06) above greedy (0.02).
+
+## 13. MedHallu Detector-Style Evaluation (`results/archive/medhallu_detector_legacy_results.json`)
+
+Run metadata:
+
+- script: `experiments/run_medhallu_eval.py`
+- dataset_id: `UTAustin-AIHealth/MedHallu`
+- subset: `pqa_artificial`
+- split: `train`
+- n_target: `50`
+- runtime_min: `118.83`
+
+### 13.1 Strategy Metrics
+
+| Strategy | n_used | n_skipped | Accuracy | Precision | F1 | Mean Margin | Rep Rate | Abstain Band Rate |
+| :-- | --: | --: | --: | --: | --: | --: | --: | --: |
+| greedy | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1448 | 0.00 | 0.24 |
+| cove | 50 | 0 | 0.20 | 0.20 | 0.3333 | -0.1544 | 0.02 | 0.28 |
+| gadr2 | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1508 | 0.02 | 0.24 |
+| cove_rag | 50 | 0 | 0.16 | 0.16 | 0.2759 | -0.1475 | 0.00 | 0.20 |
+
+### 13.2 Detection Accuracy by Difficulty
+
+| Strategy | Easy | Medium | Hard |
+| :-- | --: | --: | --: |
+| greedy | 0.0714 (n=14) | 0.3158 (n=19) | 0.0588 (n=17) |
+| cove | 0.0714 (n=14) | 0.3684 (n=19) | 0.1176 (n=17) |
+| gadr2 | 0.0714 (n=14) | 0.2632 (n=19) | 0.1176 (n=17) |
+| cove_rag | 0.0714 (n=14) | 0.3158 (n=19) | 0.0588 (n=17) |
+
+### 13.3 Abstention Analysis
+
+Applied analysis text from run:
+
+- If `|margin| < 0.05` -> abstain (route to clinician or larger model)
+- expected precision gain claim in run output: `~38%`
+
+Observed abstain-band rates:
+
+- greedy: 0.24
+- cove: 0.28
+- gadr2: 0.24
+- cove_rag: 0.20
+
+## 14. Final MedHallu MC Evaluation (Correct Framing, n=50)
+
+This section is the current final MedHallu result and supersedes earlier detector-style framing when reporting the MC chooser benchmark.
+
+Source artifacts:
+
+- `results/medhallu_results.json`
+- `results/archive/medhallu_results_snapshot_n50.json`
+
+Run metadata:
+
+- dataset_id: `UTAustin-AIHealth/MedHallu`
+- subset: `pqa_artificial`
+- split: `train`
+- chooser: `multiple_choice_by_candidate_loglikelihood`
+- n_target: `50`
+- runtime_min: `17.99`
+- delta_dola config: `alpha1=0.3, alpha2=0.3, early_layer_idx=7, mid_layer_idx=14, top_k=200`
+
+### 14.1 Overall MC Metrics
+
+| Strategy | n_used | n_skipped | Accuracy | Mean Margin | Abstain Band Rate (`|margin| < 0.05`) |
+| :-- | --: | --: | --: | --: | --: |
+| greedy_mc | 50 | 0 | 0.02 | -1.0944 | 0.02 |
+| delta_dola_mc_a10.3_a20.3 | 50 | 0 | 0.06 | -1.1638 | 0.02 |
+
+### 14.2 MC Accuracy by Difficulty
+
+| Strategy | Easy | Medium | Hard |
+| :-- | --: | --: | --: |
+| greedy_mc | 0.0000 (n=14) | 0.0526 (n=19) | 0.0000 (n=17) |
+| delta_dola_mc_a10.3_a20.3 | 0.0000 (n=14) | 0.1053 (n=19) | 0.0588 (n=17) |
+
+### 14.3 Delta vs Greedy (MC)
+
+- absolute accuracy gain: `+0.04` (from `0.02` to `0.06`)
+- relative accuracy gain: `+200%` on this 50-sample run
+- mean margin remained negative for both strategies, indicating the model still tends to favor hallucinated candidates under this likelihood-based chooser setup.

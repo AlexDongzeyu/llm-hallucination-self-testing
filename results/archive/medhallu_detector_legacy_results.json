@@ -1,0 +1,112 @@
+{
+  "dataset": {
+    "id": "UTAustin-AIHealth/MedHallu",
+    "subset": "pqa_artificial",
+    "split": "train"
+  },
+  "threshold": 0.65,
+  "n_target": 50,
+  "results": [
+    {
+      "label": "greedy",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.16,
+      "precision": 0.16,
+      "f1": 0.2759,
+      "mean_margin": -0.1448,
+      "rep_rate": 0.0,
+      "abstain_band_rate": 0.24,
+      "by_difficulty": {
+        "easy": {
+          "n": 14,
+          "accuracy": 0.0714
+        },
+        "medium": {
+          "n": 19,
+          "accuracy": 0.3158
+        },
+        "hard": {
+          "n": 17,
+          "accuracy": 0.0588
+        }
+      }
+    },
+    {
+      "label": "cove",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.2,
+      "precision": 0.2,
+      "f1": 0.3333,
+      "mean_margin": -0.1544,
+      "rep_rate": 0.02,
+      "abstain_band_rate": 0.28,
+      "by_difficulty": {
+        "easy": {
+          "n": 14,
+          "accuracy": 0.0714
+        },
+        "medium": {
+          "n": 19,
+          "accuracy": 0.3684
+        },
+        "hard": {
+          "n": 17,
+          "accuracy": 0.1176
+        }
+      }
+    },
+    {
+      "label": "gadr2",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.16,
+      "precision": 0.16,
+      "f1": 0.2759,
+      "mean_margin": -0.1508,
+      "rep_rate": 0.02,
+      "abstain_band_rate": 0.24,
+      "by_difficulty": {
+        "easy": {
+          "n": 14,
+          "accuracy": 0.0714
+        },
+        "medium": {
+          "n": 19,
+          "accuracy": 0.2632
+        },
+        "hard": {
+          "n": 17,
+          "accuracy": 0.1176
+        }
+      }
+    },
+    {
+      "label": "cove_rag",
+      "n_used": 50,
+      "n_skipped": 0,
+      "accuracy": 0.16,
+      "precision": 0.16,
+      "f1": 0.2759,
+      "mean_margin": -0.1475,
+      "rep_rate": 0.0,
+      "abstain_band_rate": 0.2,
+      "by_difficulty": {
+        "easy": {
+          "n": 14,
+          "accuracy": 0.0714
+        },
+        "medium": {
+          "n": 19,
+          "accuracy": 0.3158
+        },
+        "hard": {
+          "n": 17,
+          "accuracy": 0.0588
+        }
+      }
+    }
+  ],
+  "runtime_min": 118.83
+}
