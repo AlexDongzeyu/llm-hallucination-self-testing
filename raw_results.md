@@ -6,7 +6,7 @@ This file is the concise source-of-truth summary for current artifacts in `resul
 
 ## 1) Integrity and Status
 
-- JSON files checked (recursive under `results/`): 17
+- JSON files checked (recursive under `results/`): 18
 - JSON parse failures: 0
 - Active Python processes at audit finish: none
 - Core artifacts present and up to date vs generator scripts: yes
@@ -14,6 +14,7 @@ This file is the concise source-of-truth summary for current artifacts in `resul
 Core artifacts:
 - `results/entropy_by_layer.json`
 - `results/logit_linearity_3b.json`
+- `results/alta_3b_results.json`
 - `results/truthfulqa_delta_dola_sweep.json`
 - `results/medhallu_generation_results.json`
 - `results/medhallu_ablation_results.json`
@@ -58,7 +59,21 @@ Source: `results/truthfulqa_delta_dola_sweep.json`
 - max accuracy: 74%
 - 74% settings include (alpha1=0.0, alpha2=0.0) and (alpha1=0.3, alpha2=0.3)
 
-## 5) MedHallu Generation (Primary)
+## 5) ALTA-Style Entropy-Gated 3B Run
+
+Source: `results/alta_3b_results.json`
+
+- method: alta_3b_entropy_gated
+- model: meta-llama/Llama-3.2-3B-Instruct
+- n: 50
+- threshold: 0.65
+- accuracy: 72%
+- rep_rate: 0%
+- mean_gate_weight: 0.2099
+- mean_first_token_entropy: 0.8402
+- runtime_min: 9.78
+
+## 6) MedHallu Generation (Primary)
 
 Source: `results/medhallu_generation_results.json`
 
@@ -76,7 +91,7 @@ Source: `results/medhallu_generation_results.json`
 | delta_dola | 52% | 0% | 50 |
 | gadr2_cured | 54% | 2% | 50 |
 
-## 6) MedHallu Ablations
+## 7) MedHallu Ablations
 
 Source: `results/medhallu_ablation_results.json`
 
@@ -88,7 +103,7 @@ Source: `results/medhallu_ablation_results.json`
 | sled | 52% | 0% | 50 |
 | bon3_t0.3 | 48% | 0% | 50 |
 
-## 7) MedHallu MC Chooser (Ablation)
+## 8) MedHallu MC Chooser (Ablation)
 
 Source: `results/medhallu_results.json`
 
@@ -101,7 +116,7 @@ Source: `results/medhallu_results.json`
 | greedy_mc | 2% | -1.0944 | 2% | 50 |
 | delta_dola_mc_a10.3_a20.3 | 6% | -1.1638 | 2% | 50 |
 
-## 8) Other Benchmark Snapshots
+## 9) Other Benchmark Snapshots
 
 ### Instruct (`results/instruct_results.json`)
 
@@ -155,18 +170,40 @@ Source: `results/medhallu_results.json`
 | meta-llama/Llama-3.2-3B | 0.0821 | -0.4211 | 3.5120 | 0.2140 | 35% | 100 |
 | Qwen/Qwen2.5-3B | 0.3121 | -0.0814 | 2.1040 | 0.4420 | 14% | 100 |
 
-## 9) Figures
+## 10) Figures
 
 Current files in `results/figures/`:
-- `fig1_entropy_compression.png` (278,097 bytes)
+- `fig1_entropy_compression.png` (273,699 bytes)
 - `fig2_method_comparison.png` (129,361 bytes)
 - `fig3_delta_dola_sweep.png` (130,404 bytes)
 - `fig4_routing.png` (128,222 bytes)
 - `fig5_cross_model_cove.png` (81,360 bytes)
 
-## 10) Important Notes
+## 11) Important Notes
 
 - SelfCheck is reported for TruthfulQA only in current artifacts.
 - MedHallu does not currently include a SelfCheck strategy run in `results/medhallu_generation_results.json`.
 - Observed late-layer diagnostics at 3B: `mean R2=0.5557`, late-layer CV range `0.582-0.838`.
 - Metric guardrail for joint writing: Alex TruthfulQA cosine-threshold accuracy is not directly comparable to ALTA `%True x %Info` values from 8B studies.
+
+## 12) Metric-Separated Manuscript Tables
+
+Table A (Alex section, generation cosine@0.65):
+
+| Method | Model | TruthfulQA (gen) | MedHallu (gen) |
+|---|---|---:|---:|
+| Greedy | 3B-Instruct | 70% | 50% |
+| DeLTa+DoLa (alpha1=0.3, alpha2=0.3) | 3B-Instruct | 74% | 52% |
+| ALTA-3B (entropy-gated) | 3B-Instruct | 72% | - |
+| CURED | 3B-Instruct | 74% | 54% |
+
+Note: DeLTa+DoLa at (0.3, 0.3) ties the greedy sweep point (0.0, 0.0) at 74%.
+
+Table B (Ben section, multiple-choice scoring):
+
+| Method | Model | TruthfulQA (MC) | MedQA (MC) | PubMedQA (MC) |
+|---|---|---:|---:|---:|
+| Greedy | 8B-Instruct | - | - | - |
+| ALTA | 8B-Instruct | 65.1% | 73.8% | 77.4% |
+
+Caption note: Tables A and B use different models and evaluation protocols and should not be directly compared.

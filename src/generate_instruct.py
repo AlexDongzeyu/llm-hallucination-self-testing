@@ -737,23 +737,24 @@ def _compute_routing_features(prompt_formatted: str, k_tokens: int = 15) -> np.n
 
 def gadr2_generate(question: str, max_new_tokens: int = 80) -> dict:
     """
-    GADR-2: Gradient-Aware Dynamic Router.
+        GADR-2: Gradient-Aware Dynamic Router (paper name: CURED).
 
-    EMPIRICAL FINDING (routing_dataset.csv, n=100):
-    On RLHF instruct models, dH < 0 for ALL questions (mean=-9.86).
-    Entropy always drops from H1≈10.81 -> H4≈0.95 regardless of correctness.
-    The theoretical Zone A/B/C framework collapses to Zone A for instruct models.
-    This is the empirical signature of RLHF confidence compression.
+        Current diagnostics on Llama-3.2-3B-Instruct:
+        - Late-layer logit linearity (results/logit_linearity_3b.json):
+            mean R2 = 0.5557 over layers 14-28 (n=30).
+        - Entropy profile (results/entropy_by_layer.json):
+            H1=0.0806, H7=10.8342, H28=0.8516;
+            L1->L28 mean dH=+0.7711 and L7->L28 mean dH=-9.9826.
+        - ALTA-style entropy-gated run (results/alta_3b_results.json):
+            TruthfulQA generation accuracy=72% (n=50, threshold=0.65).
 
-    Therefore routing uses:
-    1. DOMAIN (AUROC=0.646 alone) -- the strongest available signal
-    2. d2H WITHIN MEDICAL (r=-0.255) -- curvature discriminates trajectory shape
+        Routing features used here are question-level signals:
+        - domain classification
+        - entropy curvature d2H within medical questions
 
-    Routing table (backed by routing_dataset.csv simulation):
-      General -> greedy:         74% accuracy (CoVe hurts: 60%, ITI: 72%)
-      Medical + d2H <= -0.82  -> CoVe:     48% (+12% over greedy 36%)
-      Medical + d2H > -0.82  -> ITI-low:  64% (+8% over greedy 56%)
-      Combined medical:          56% vs greedy 46% (+10%), CoVe-all 54% (+2%)
+        Empirical references in this repo:
+        - domain AUROC = 0.646
+        - within-medical d2H correlation r = -0.255
     """
     prompt = format_instruct_prompt(question)
     domain = _detect_domain(question)

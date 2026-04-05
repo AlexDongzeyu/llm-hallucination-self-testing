@@ -1,0 +1,19 @@
+{
+  "method": "alta_3b_entropy_gated",
+  "model": "meta-llama/Llama-3.2-3B-Instruct",
+  "n": 50,
+  "threshold": 0.65,
+  "accuracy": 0.72,
+  "rep_rate": 0.0,
+  "runtime_min": 9.78,
+  "mean_gate_weight": 0.2099,
+  "mean_first_token_entropy": 0.8402,
+  "settings": {
+    "early_idx": 7,
+    "mid_idx": 14,
+    "top_k": 200,
+    "alpha_contrast": 0.3,
+    "alpha_extrap": 0.3,
+    "max_new_tokens": 80
+  }
+}
