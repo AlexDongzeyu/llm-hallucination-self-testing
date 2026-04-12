@@ -58,14 +58,27 @@ Validation:
 	- benchmark: `both`
 	- n_target: `50`
 	- protocols: `greedy,alta,cove,cured`
+- `../results_8b_medqa_v2.json`
+	- benchmark: `custom` (`benchmarks/medqa_usmle_n200.csv`)
+	- scoring: `letter`
+	- n_target: `100`
+	- protocols: `greedy,alta,cove,cured`
+
+`results_8b_medqa_v2.json` metrics:
+
+| protocol | accuracy | n_scored | n_total | rep_rate |
+|---|---:|---:|---:|---:|
+| greedy | 29.00% | 100 | 100 | 0.00 |
+| alta | 28.00% | 100 | 100 | 0.00 |
+| cove | 13.00% | 100 | 100 | 0.00 |
+| cured | 14.00% | 100 | 100 | 0.00 |
 
 ### Not complete yet (excluded from verified table)
 
-- `../results_8b_medqa_v2.json` (missing)
 - `../results_8b_pubmedqa_v2.json` (missing)
 - `../results_8b_medhallu_v2.json` (missing)
 
-The active local process is still running `local_medqa_v2` and has not produced a final output JSON yet.
+Most recent local PubMedQA v2 logs currently do not contain a completed benchmark summary or saved output JSON entry.
 
 ## Historical Research Artifacts (unchanged)
 

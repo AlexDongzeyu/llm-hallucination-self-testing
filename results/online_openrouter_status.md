@@ -32,8 +32,9 @@ Last updated: 2026-04-12
 - Complete and verified now:
   - OpenRouter v2 custom: MedQA, PubMedQA, MedHallu
   - OpenRouter legacy: both (`n=50`)
+  - Local custom: MedQA v2 (`results_8b_medqa_v2.json`)
 - Not complete yet:
-  - local v2 custom output trio (`results_8b_medqa_v2.json`, `results_8b_pubmedqa_v2.json`, `results_8b_medhallu_v2.json`)
+  - local v2 pending outputs (`results_8b_pubmedqa_v2.json`, `results_8b_medhallu_v2.json`)
 
 ## Cloudflare v2 Relation
 

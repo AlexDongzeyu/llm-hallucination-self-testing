@@ -1,17 +1,26 @@
 # Raw Results (Synced)
 
-Last sync: 2026-04-05
+Last sync: 2026-04-12
 
-This file is the concise source-of-truth summary for current artifacts in `results/`.
+This file is the concise source-of-truth summary for completed and verified artifacts.
 
 ## 1) Integrity and Status
 
-- JSON files checked (recursive under `results/`): 18
+- JSON files checked (recursive under `results/`): 45
 - JSON parse failures: 0
-- Active Python processes at audit finish: none
-- Core artifacts present and up to date vs generator scripts: yes
+- Verified newly completed local v2 artifact: `results_8b_medqa_v2.json`
+- Local v2 outputs still missing: `results_8b_pubmedqa_v2.json`, `results_8b_medhallu_v2.json`
+- OpenRouter v2 and Cloudflare v2 pairs remain hash-identical (fallback provenance verified)
 
 Core artifacts:
+- `results/results_openrouter_medqa_v2.json`
+- `results/results_openrouter_pubmedqa_v2.json`
+- `results/results_openrouter_medhallu_v2.json`
+- `results/results_cloudflare_medqa_v2.json`
+- `results/results_cloudflare_pubmedqa_v2.json`
+- `results/results_cloudflare_medhallu_v2.json`
+- `results_8b_both.json`
+- `results_8b_medqa_v2.json`
 - `results/entropy_by_layer.json`
 - `results/logit_linearity_3b.json`
 - `results/alta_3b_results.json`
@@ -21,7 +30,46 @@ Core artifacts:
 - `results/medhallu_results.json`
 - `results/figures/*.png`
 
-## 2) Entropy Extraction
+## 2) Current V2 Completion Snapshot
+
+### API custom benchmark v2 (`n=100`, complete)
+
+| dataset | protocol | accuracy | n_scored | n_total | rep_rate |
+|---|---|---:|---:|---:|---:|
+| MedQA | greedy | 44.00% | 100 | 100 | 0.00 |
+| MedQA | cove | 14.00% | 100 | 100 | 0.00 |
+| MedQA | cured_api | 21.21% | 99 | 100 | 0.01 |
+| PubMedQA | greedy | 57.00% | 100 | 100 | 0.00 |
+| PubMedQA | cove | 47.00% | 100 | 100 | 0.00 |
+| PubMedQA | cured_api | 52.00% | 100 | 100 | 0.00 |
+| MedHallu | greedy | 59.00% | 100 | 100 | 0.00 |
+| MedHallu | cove | 54.84% | 93 | 100 | 0.07 |
+| MedHallu | cured_api | 55.91% | 93 | 100 | 0.07 |
+
+Cloudflare v2 files are intentional fallback copies of OpenRouter v2 outputs; pairwise SHA256 values are identical.
+
+### Local 8B status
+
+Completed local files:
+
+- `results_8b_both.json`
+- `results_8b_medqa_v2.json`
+
+Missing local files:
+
+- `results_8b_pubmedqa_v2.json`
+- `results_8b_medhallu_v2.json`
+
+`results_8b_medqa_v2.json` metrics (`n=100`, custom MedQA letter scoring):
+
+| protocol | accuracy | n_scored | n_total | rep_rate |
+|---|---:|---:|---:|---:|
+| greedy | 29.00% | 100 | 100 | 0.00 |
+| alta | 28.00% | 100 | 100 | 0.00 |
+| cove | 13.00% | 100 | 100 | 0.00 |
+| cured | 14.00% | 100 | 100 | 0.00 |
+
+## 3) Entropy Extraction
 
 Source: `results/entropy_by_layer.json`
 
@@ -36,7 +84,7 @@ Source: `results/entropy_by_layer.json`
 - L7->L28 dH < 0: 100%
 - late-layer CV (L21-L28): min 0.582, max 0.838, mean 0.710
 
-## 3) 3B Late-Layer Logit Linearity
+## 4) 3B Late-Layer Logit Linearity
 
 Source: `results/logit_linearity_3b.json`
 
@@ -48,7 +96,7 @@ Source: `results/logit_linearity_3b.json`
 - median R2: 0.5770
 - std of per-question mean R2: 0.0696
 
-## 4) TruthfulQA DeLTa+DoLa Sweep
+## 5) TruthfulQA DeLTa+DoLa Sweep
 
 Source: `results/truthfulqa_delta_dola_sweep.json`
 
@@ -59,7 +107,7 @@ Source: `results/truthfulqa_delta_dola_sweep.json`
 - max accuracy: 74%
 - 74% settings include (alpha1=0.0, alpha2=0.0) and (alpha1=0.3, alpha2=0.3)
 
-## 5) ALTA-Style Entropy-Gated 3B Run
+## 6) ALTA-Style Entropy-Gated 3B Run
 
 Source: `results/alta_3b_results.json`
 
@@ -73,7 +121,7 @@ Source: `results/alta_3b_results.json`
 - mean_first_token_entropy: 0.8402
 - runtime_min: 9.78
 
-## 6) MedHallu Generation (Primary)
+## 7) MedHallu Generation (Primary)
 
 Source: `results/medhallu_generation_results.json`
 
@@ -91,7 +139,7 @@ Source: `results/medhallu_generation_results.json`
 | delta_dola | 52% | 0% | 50 |
 | gadr2_cured | 54% | 2% | 50 |
 
-## 7) MedHallu Ablations
+## 8) MedHallu Ablations
 
 Source: `results/medhallu_ablation_results.json`
 
@@ -103,7 +151,7 @@ Source: `results/medhallu_ablation_results.json`
 | sled | 52% | 0% | 50 |
 | bon3_t0.3 | 48% | 0% | 50 |
 
-## 8) MedHallu MC Chooser (Ablation)
+## 9) MedHallu MC Chooser (Ablation)
 
 Source: `results/medhallu_results.json`
 
@@ -116,7 +164,7 @@ Source: `results/medhallu_results.json`
 | greedy_mc | 2% | -1.0944 | 2% | 50 |
 | delta_dola_mc_a10.3_a20.3 | 6% | -1.1638 | 2% | 50 |
 
-## 9) Other Benchmark Snapshots
+## 10) Other Benchmark Snapshots
 
 ### Instruct (`results/instruct_results.json`)
 
@@ -170,7 +218,7 @@ Source: `results/medhallu_results.json`
 | meta-llama/Llama-3.2-3B | 0.0821 | -0.4211 | 3.5120 | 0.2140 | 35% | 100 |
 | Qwen/Qwen2.5-3B | 0.3121 | -0.0814 | 2.1040 | 0.4420 | 14% | 100 |
 
-## 10) Figures
+## 11) Figures
 
 Current files in `results/figures/`:
 - `fig1_entropy_compression.png` (273,699 bytes)
@@ -179,14 +227,14 @@ Current files in `results/figures/`:
 - `fig4_routing.png` (128,222 bytes)
 - `fig5_cross_model_cove.png` (81,360 bytes)
 
-## 11) Important Notes
+## 12) Important Notes
 
 - SelfCheck is reported for TruthfulQA only in current artifacts.
 - MedHallu does not currently include a SelfCheck strategy run in `results/medhallu_generation_results.json`.
 - Observed late-layer diagnostics at 3B: `mean R2=0.5557`, late-layer CV range `0.582-0.838`.
 - Metric guardrail for joint writing: Alex TruthfulQA cosine-threshold accuracy is not directly comparable to ALTA `%True x %Info` values from 8B studies.
 
-## 12) Metric-Separated Manuscript Tables
+## 13) Metric-Separated Manuscript Tables
 
 Table A (Alex section, generation cosine@0.65):
 
