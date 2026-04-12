@@ -1,0 +1,76 @@
+Running in API mode: backend=openrouter models=['meta-llama/llama-3.1-8b-instruct']
+Loading sentence scorer (CPU)...
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 3929.14it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+Loaded custom CSV: n=100
+
+####################################################################################
+API model: meta-llama/llama-3.1-8b-instruct
+
+==============================================================
+Benchmark: custom (n=100)
+
+  Protocol: greedy
+  [10/100] acc=0.0% rep=0.0% strategies={'greedy_error': 10} eta=0min
+  [20/100] acc=0.0% rep=0.0% strategies={'greedy_error': 20} eta=0min
+  [30/100] acc=0.0% rep=0.0% strategies={'greedy_error': 30} eta=0min
+  [40/100] acc=0.0% rep=0.0% strategies={'greedy_error': 40} eta=0min
+  [50/100] acc=0.0% rep=0.0% strategies={'greedy_error': 50} eta=0min
+  [60/100] acc=0.0% rep=0.0% strategies={'greedy_error': 60} eta=0min
+  [70/100] acc=0.0% rep=0.0% strategies={'greedy_error': 70} eta=0min
+  [80/100] acc=0.0% rep=0.0% strategies={'greedy_error': 80} eta=0min
+  [90/100] acc=0.0% rep=0.0% strategies={'greedy_error': 90} eta=0min
+  [100/100] acc=0.0% rep=0.0% strategies={'greedy_error': 100} eta=0min
+  -> greedy: acc=n/a rep=0.0% runtime=0.1min
+
+  Protocol: cove
+  [10/100] acc=0.0% rep=0.0% strategies={'cove_error': 10} eta=0min
+  [20/100] acc=0.0% rep=0.0% strategies={'cove_error': 20} eta=0min
+  [30/100] acc=0.0% rep=0.0% strategies={'cove_error': 30} eta=0min
+  [40/100] acc=0.0% rep=0.0% strategies={'cove_error': 40} eta=0min
+  [50/100] acc=0.0% rep=0.0% strategies={'cove_error': 50} eta=0min
+  [60/100] acc=0.0% rep=0.0% strategies={'cove_error': 60} eta=0min
+  [70/100] acc=0.0% rep=0.0% strategies={'cove_error': 70} eta=0min
+  [80/100] acc=0.0% rep=0.0% strategies={'cove_error': 80} eta=0min
+  [90/100] acc=0.0% rep=0.0% strategies={'cove_error': 90} eta=0min
+  [100/100] acc=0.0% rep=0.0% strategies={'cove_error': 100} eta=0min
+  -> cove: acc=n/a rep=0.0% runtime=0.2min
+
+  Protocol: cured_api
+  [10/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 10} eta=0min
+  [20/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 20} eta=0min
+  [30/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 30} eta=0min
+  [40/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 40} eta=0min
+  [50/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 50} eta=0min
+  [60/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 60} eta=0min
+  [70/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 70} eta=0min
+  [80/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 80} eta=0min
+  [90/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 90} eta=0min
+  [100/100] acc=0.0% rep=0.0% strategies={'cured_api_error': 100} eta=0min
+  -> cured_api: acc=n/a rep=0.0% runtime=0.4min
+
+====================================================================================
+CURED API RESULTS | mode=openrouter model=meta-llama/llama-3.1-8b-instruct
+====================================================================================
+protocol                  custom
+--------------------------------
+greedy                       n/a
+cove                         n/a
+cured_api                    n/a
+
+Delta vs greedy:
+  cove                       n/a
+  cured_api                  n/a
+
+CURED_API routing distribution:
+  custom: {'cured_api_error': 1.0}
+====================================================================================
+
+Saved summary: c:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\results\results_openrouter_medqa.json
+Saved per-question log: C:\Users\dongz\.cured_cache\per_question_api_openrouter_1775840368.json

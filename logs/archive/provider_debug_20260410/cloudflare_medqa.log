@@ -1,0 +1,379 @@
+Running in API mode: backend=cloudflare models=['@cf/meta/llama-3.1-8b-instruct']
+Loading sentence scorer (CPU)...
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 6964.47it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+Loaded custom CSV: n=100
+
+####################################################################################
+API model: @cf/meta/llama-3.1-8b-instruct
+
+==============================================================
+Benchmark: custom (n=100)
+
+  Protocol: greedy
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [10/100] acc=0.0% rep=0.0% strategies={'api_greedy': 10} eta=6min
+  [20/100] acc=0.0% rep=0.0% strategies={'api_greedy': 20} eta=7min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [30/100] acc=0.0% rep=0.0% strategies={'api_greedy': 30} eta=7min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  [40/100] acc=2.5% rep=0.0% strategies={'api_greedy': 39, 'greedy_error': 1} eta=6min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [50/100] acc=4.0% rep=0.0% strategies={'api_greedy': 49, 'greedy_error': 1} eta=5min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [60/100] acc=5.0% rep=0.0% strategies={'api_greedy': 59, 'greedy_error': 1} eta=4min
+  [70/100] acc=4.3% rep=0.0% strategies={'api_greedy': 69, 'greedy_error': 1} eta=3min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  [80/100] acc=3.8% rep=0.0% strategies={'api_greedy': 79, 'greedy_error': 1} eta=2min
+  [90/100] acc=3.3% rep=0.0% strategies={'api_greedy': 89, 'greedy_error': 1} eta=1min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [100/100] acc=3.0% rep=0.0% strategies={'api_greedy': 98, 'greedy_error': 2} eta=0min
+  -> greedy: acc=3.0% rep=0.0% runtime=11.0min
+
+  Protocol: cove
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [10/100] acc=0.0% rep=0.0% strategies={'api_cove': 8, 'cove_error': 2} eta=40min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [20/100] acc=0.0% rep=0.0% strategies={'api_cove': 17, 'cove_error': 3} eta=39min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [30/100] acc=0.0% rep=0.0% strategies={'api_cove': 26, 'cove_error': 4} eta=39min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [40/100] acc=2.5% rep=0.0% strategies={'api_cove': 34, 'cove_error': 6} eta=36min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [50/100] acc=4.0% rep=0.0% strategies={'api_cove': 44, 'cove_error': 6} eta=32min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [60/100] acc=5.0% rep=0.0% strategies={'api_cove': 53, 'cove_error': 7} eta=26min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 2/4); retrying in 4.0s
+  [70/100] acc=4.3% rep=0.0% strategies={'api_cove': 62, 'cove_error': 8} eta=19min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [80/100] acc=3.8% rep=0.0% strategies={'api_cove': 68, 'cove_error': 12} eta=14min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [90/100] acc=3.3% rep=0.0% strategies={'api_cove': 74, 'cove_error': 16} eta=7min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [100/100] acc=3.0% rep=0.0% strategies={'api_cove': 80, 'cove_error': 20} eta=0min
+  -> cove: acc=3.0% rep=0.0% runtime=72.7min
+
+  Protocol: cured_api
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [10/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 8, 'cured_api_error': 2} eta=77min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [20/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 8} eta=61min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [30/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 18} eta=42min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [40/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 28} eta=31min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [50/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 38} eta=23min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [60/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 48} eta=17min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [70/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 58} eta=12min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [80/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 68} eta=8min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [90/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 78} eta=4min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 2/4); retrying in 4.0s
+  HTTP 429 from API (attempt 3/4); retrying in 8.0s
+  [100/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 12, 'cured_api_error': 88} eta=0min
+  -> cured_api: acc=0.0% rep=0.0% runtime=36.5min
+
+====================================================================================
+CURED API RESULTS | mode=cloudflare model=@cf/meta/llama-3.1-8b-instruct
+====================================================================================
+protocol                  custom
+--------------------------------
+greedy                      3.0%
+cove                        3.0%
+cured_api                   0.0%
+
+Delta vs greedy:
+  cove                     +0.0%
+  cured_api                -3.0%
+
+CURED_API routing distribution:
+  custom: {'api_cove_medical': 0.12, 'cured_api_error': 0.88}
+====================================================================================
+
+Saved summary: c:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\results\results_cloudflare_medqa.json
+Saved per-question log: C:\Users\dongz\.cured_cache\per_question_api_cloudflare_1775789229.json

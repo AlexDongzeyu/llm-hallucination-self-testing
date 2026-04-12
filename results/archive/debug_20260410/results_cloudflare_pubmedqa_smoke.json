@@ -1,0 +1,52 @@
+{
+  "api_mode": "cloudflare",
+  "api_models": [
+    "@cf/meta/llama-3.1-8b-instruct"
+  ],
+  "protocols": [
+    "greedy",
+    "cove",
+    "cured_api"
+  ],
+  "benchmark": "custom",
+  "n_target": 5,
+  "max_new_tokens": 16,
+  "api_temperature": 0.0,
+  "cosine_threshold": 0.65,
+  "results": {
+    "@cf/meta/llama-3.1-8b-instruct": {
+      "custom": {
+        "greedy": {
+          "n_total": 5,
+          "n_scored": 0,
+          "accuracy": null,
+          "rep_rate": 0.0,
+          "routing": {
+            "greedy_error": 1.0
+          },
+          "runtime_min": 0.01
+        },
+        "cove": {
+          "n_total": 5,
+          "n_scored": 0,
+          "accuracy": null,
+          "rep_rate": 0.0,
+          "routing": {
+            "cove_error": 1.0
+          },
+          "runtime_min": 0.01
+        },
+        "cured_api": {
+          "n_total": 5,
+          "n_scored": 0,
+          "accuracy": null,
+          "rep_rate": 0.0,
+          "routing": {
+            "cured_api_error": 1.0
+          },
+          "runtime_min": 0.0
+        }
+      }
+    }
+  }
+}

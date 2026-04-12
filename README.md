@@ -51,6 +51,7 @@ Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) a
 - `results/medhallu_generation_results.json`
 - `results/medhallu_ablation_results.json`
 - `results/medhallu_results.json`
+- `results/online_openrouter_status.md`
 - `results/figures/*.png`
 - `raw_results.md`
 

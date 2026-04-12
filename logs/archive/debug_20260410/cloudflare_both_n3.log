@@ -1,0 +1,76 @@
+﻿Running in API mode: backend=cloudflare models=['@cf/meta/llama-3.1-8b-instruct']
+Loading sentence scorer (CPU)...
+python.exe : 
+At line:1 char:439
++ ... ETRIES="3"; & "c:/Users/dongz/OneDrive/Project Code/LLM_Hallucination ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|##########| 103/103 [00:00<00:00, 4750.64it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different 
+task/architecture; not ok if you expect identical arch.[0m
+Loaded TruthfulQA: n=3
+  MedHallu source: UTAustin-AIHealth/MedHallu subset=pqa_artificial split=train
+Loaded MedHallu: n=3
+
+####################################################################################
+API model: @cf/meta/llama-3.1-8b-instruct
+
+==============================================================
+Benchmark: truthfulqa (n=3)
+
+  Protocol: greedy
+  -> greedy: acc=66.7% rep=0.0% runtime=0.9min
+
+  Protocol: cove
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  -> cove: acc=100.0% rep=0.0% runtime=0.9min
+
+  Protocol: cured_api
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  -> cured_api: acc=100.0% rep=0.0% runtime=0.3min
+
+==============================================================
+Benchmark: medhallu (n=3)
+
+  Protocol: greedy
+  -> greedy: acc=0.0% rep=0.0% runtime=0.2min
+
+  Protocol: cove
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 2/4); retrying in 4.0s
+  -> cove: acc=0.0% rep=0.0% runtime=2.7min
+
+  Protocol: cured_api
+  -> cured_api: acc=0.0% rep=0.0% runtime=1.5min
+
+====================================================================================
+CURED API RESULTS | mode=cloudflare model=@cf/meta/llama-3.1-8b-instruct
+====================================================================================
+protocol              truthfulqa          medhallu
+--------------------------------------------------
+greedy                     66.7%              0.0%
+cove                      100.0%              0.0%
+cured_api                 100.0%              0.0%
+
+Delta vs greedy:
+  cove                    +33.3%             +0.0%
+  cured_api               +33.3%             +0.0%
+
+CURED_API routing distribution:
+  truthfulqa: {'api_greedy_general': 1.0}
+  medhallu: {'api_cove_medical': 1.0}
+====================================================================================
+
+Saved summary: results\results_cloudflare_both_n3.json
+Saved per-question log: C:\Users\dongz\.cured_cache\per_question_api_cloudflare_1775777138.json

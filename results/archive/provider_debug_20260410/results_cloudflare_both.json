@@ -1,0 +1,90 @@
+{
+  "api_mode": "cloudflare",
+  "api_models": [
+    "@cf/meta/llama-3.1-8b-instruct"
+  ],
+  "protocols": [
+    "greedy",
+    "cove",
+    "cured_api"
+  ],
+  "benchmark": "both",
+  "n_target": 50,
+  "max_new_tokens": 16,
+  "api_temperature": 0.0,
+  "cosine_threshold": 0.65,
+  "results": {
+    "@cf/meta/llama-3.1-8b-instruct": {
+      "truthfulqa": {
+        "greedy": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.64,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_greedy": 0.98,
+            "greedy_error": 0.02
+          },
+          "runtime_min": 8.67
+        },
+        "cove": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.6,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_cove": 0.94,
+            "cove_error": 0.06
+          },
+          "runtime_min": 28.04
+        },
+        "cured_api": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.64,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_greedy_general": 0.96,
+            "cured_api_error": 0.04
+          },
+          "runtime_min": 9.16
+        }
+      },
+      "medhallu": {
+        "greedy": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.12,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_greedy": 1.0
+          },
+          "runtime_min": 6.21
+        },
+        "cove": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.08,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_cove": 0.92,
+            "cove_error": 0.08
+          },
+          "runtime_min": 26.98
+        },
+        "cured_api": {
+          "n_total": 50,
+          "n_scored": 50,
+          "accuracy": 0.1,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_cove_medical": 0.8,
+            "cured_api_error": 0.08,
+            "api_greedy_general": 0.12
+          },
+          "runtime_min": 26.73
+        }
+      }
+    }
+  }
+}

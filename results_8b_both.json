@@ -1,0 +1,108 @@
+{
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "load_in_4bit": true,
+  "protocols": [
+    "greedy",
+    "alta",
+    "cove",
+    "cured"
+  ],
+  "benchmark": "both",
+  "n_target": 50,
+  "max_new_tokens": 80,
+  "cosine_threshold": 0.65,
+  "calibration": {
+    "mean_r2": 0.5556583780592937,
+    "alta_viable": false,
+    "d2h_threshold": -7.610338628292084,
+    "iti_available": false
+  },
+  "results": {
+    "truthfulqa": {
+      "greedy": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.7755,
+        "rep_rate": 0.02,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 62.97
+      },
+      "alta": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.7959,
+        "rep_rate": 0.02,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 62.1
+      },
+      "cove": {
+        "n_total": 50,
+        "n_scored": 50,
+        "accuracy": 0.78,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 257.26
+      },
+      "cured": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.7755,
+        "rep_rate": 0.02,
+        "routing": {
+          "greedy_general": 1.0
+        },
+        "runtime_min": 64.45
+      }
+    },
+    "medhallu": {
+      "greedy": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.5306,
+        "rep_rate": 0.02,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 67.28
+      },
+      "alta": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.4694,
+        "rep_rate": 0.02,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 67.43
+      },
+      "cove": {
+        "n_total": 50,
+        "n_scored": 50,
+        "accuracy": 0.54,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 271.77
+      },
+      "cured": {
+        "n_total": 50,
+        "n_scored": 49,
+        "accuracy": 0.551,
+        "rep_rate": 0.02,
+        "routing": {
+          "greedy_medical_no_iti": 0.46,
+          "cove_medical": 0.42,
+          "greedy_general": 0.12
+        },
+        "runtime_min": 167.31
+      }
+    }
+  }
+}

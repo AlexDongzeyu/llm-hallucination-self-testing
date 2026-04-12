@@ -1,0 +1,54 @@
+{
+  "api_mode": "openrouter",
+  "api_models": [
+    "meta-llama/llama-3.1-8b-instruct"
+  ],
+  "protocols": [
+    "greedy",
+    "cove",
+    "cured_api"
+  ],
+  "benchmark": "custom",
+  "n_target": 100,
+  "max_new_tokens": 80,
+  "api_temperature": 0.0,
+  "cosine_threshold": 0.65,
+  "scoring": "cosine",
+  "results": {
+    "meta-llama/llama-3.1-8b-instruct": {
+      "custom": {
+        "greedy": {
+          "n_total": 100,
+          "n_scored": 100,
+          "accuracy": 0.59,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_greedy": 1.0
+          },
+          "runtime_min": 2.31
+        },
+        "cove": {
+          "n_total": 100,
+          "n_scored": 93,
+          "accuracy": 0.5484,
+          "rep_rate": 0.07,
+          "routing": {
+            "api_cove": 1.0
+          },
+          "runtime_min": 11.25
+        },
+        "cured_api": {
+          "n_total": 100,
+          "n_scored": 93,
+          "accuracy": 0.5591,
+          "rep_rate": 0.07,
+          "routing": {
+            "api_cove_medical": 0.76,
+            "api_greedy_general": 0.24
+          },
+          "runtime_min": 7.93
+        }
+      }
+    }
+  }
+}

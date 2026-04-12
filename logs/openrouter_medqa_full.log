@@ -1,0 +1,76 @@
+Running in API mode: backend=openrouter models=['meta-llama/llama-3.1-8b-instruct']
+Loading sentence scorer (CPU)...
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 5198.72it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different task/architecture; not ok if you expect identical arch.[0m
+Loaded custom CSV: n=100
+
+####################################################################################
+API model: meta-llama/llama-3.1-8b-instruct
+
+==============================================================
+Benchmark: custom (n=100)
+
+  Protocol: greedy
+  [10/100] acc=0.0% rep=0.0% strategies={'api_greedy': 10} eta=1min
+  [20/100] acc=0.0% rep=0.0% strategies={'api_greedy': 20} eta=1min
+  [30/100] acc=0.0% rep=0.0% strategies={'api_greedy': 30} eta=1min
+  [40/100] acc=0.0% rep=0.0% strategies={'api_greedy': 40} eta=1min
+  [50/100] acc=2.0% rep=0.0% strategies={'api_greedy': 50} eta=1min
+  [60/100] acc=5.0% rep=0.0% strategies={'api_greedy': 60} eta=0min
+  [70/100] acc=4.3% rep=0.0% strategies={'api_greedy': 70} eta=0min
+  [80/100] acc=5.0% rep=0.0% strategies={'api_greedy': 80} eta=0min
+  [90/100] acc=4.4% rep=0.0% strategies={'api_greedy': 90} eta=0min
+  [100/100] acc=4.0% rep=0.0% strategies={'api_greedy': 100} eta=0min
+  -> greedy: acc=4.0% rep=0.0% runtime=1.2min
+
+  Protocol: cove
+  [10/100] acc=0.0% rep=0.0% strategies={'api_cove': 10} eta=87min
+  [20/100] acc=0.0% rep=0.0% strategies={'api_cove': 20} eta=44min
+  [30/100] acc=0.0% rep=0.0% strategies={'api_cove': 30} eta=28min
+  [40/100] acc=0.0% rep=0.0% strategies={'api_cove': 40} eta=19min
+  [50/100] acc=2.0% rep=0.0% strategies={'api_cove': 50} eta=14min
+  [60/100] acc=1.7% rep=0.0% strategies={'api_cove': 60} eta=10min
+  [70/100] acc=1.4% rep=0.0% strategies={'api_cove': 70} eta=7min
+  [80/100] acc=2.5% rep=0.0% strategies={'api_cove': 80} eta=4min
+  [90/100] acc=3.3% rep=0.0% strategies={'api_cove': 90} eta=2min
+  [100/100] acc=3.0% rep=0.0% strategies={'api_cove': 100} eta=0min
+  -> cove: acc=3.0% rep=0.0% runtime=18.0min
+
+  Protocol: cured_api
+  [10/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 10} eta=7min
+  [20/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 20} eta=6min
+  [30/100] acc=0.0% rep=0.0% strategies={'api_cove_medical': 30} eta=5min
+  [40/100] acc=2.5% rep=0.0% strategies={'api_cove_medical': 40} eta=5min
+  [50/100] acc=2.0% rep=0.0% strategies={'api_cove_medical': 50} eta=4min
+  [60/100] acc=3.3% rep=0.0% strategies={'api_cove_medical': 60} eta=3min
+  [70/100] acc=2.9% rep=0.0% strategies={'api_cove_medical': 69, 'api_greedy_general': 1} eta=2min
+  [80/100] acc=2.5% rep=0.0% strategies={'api_cove_medical': 79, 'api_greedy_general': 1} eta=2min
+  [90/100] acc=2.2% rep=0.0% strategies={'api_cove_medical': 89, 'api_greedy_general': 1} eta=1min
+  [100/100] acc=2.0% rep=0.0% strategies={'api_cove_medical': 98, 'api_greedy_general': 2} eta=0min
+  -> cured_api: acc=2.0% rep=0.0% runtime=8.1min
+
+====================================================================================
+CURED API RESULTS | mode=openrouter model=meta-llama/llama-3.1-8b-instruct
+====================================================================================
+protocol                  custom
+--------------------------------
+greedy                      4.0%
+cove                        3.0%
+cured_api                   2.0%
+
+Delta vs greedy:
+  cove                     -1.0%
+  cured_api                -2.0%
+
+CURED_API routing distribution:
+  custom: {'api_cove_medical': 0.98, 'api_greedy_general': 0.02}
+====================================================================================
+
+Saved summary: c:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\results\results_openrouter_medqa.json
+Saved per-question log: C:\Users\dongz\.cured_cache\per_question_api_openrouter_1775853296.json

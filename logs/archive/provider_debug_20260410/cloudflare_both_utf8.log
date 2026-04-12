@@ -1,0 +1,152 @@
+﻿Running in API mode: backend=cloudflare models=['@cf/meta/llama-3.1-8b-instruct']
+Loading sentence scorer (CPU)...
+python.exe : 
+At line:1 char:323
++ ... ETRIES="3"; & "c:/Users/dongz/OneDrive/Project Code/LLM_Hallucination ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]
+Loading weights: 100%|##########| 103/103 [00:00<00:00, 4658.78it/s]
+[1mBertModel LOAD REPORT[0m from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  | 
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  | 
+
+[3mNotes:
+- UNEXPECTED[3m	:can be ignored when loading from different 
+task/architecture; not ok if you expect identical arch.[0m
+Loaded TruthfulQA: n=50
+  MedHallu source: UTAustin-AIHealth/MedHallu subset=pqa_artificial split=train
+Loaded MedHallu: n=50
+
+####################################################################################
+API model: @cf/meta/llama-3.1-8b-instruct
+
+==============================================================
+Benchmark: truthfulqa (n=50)
+
+  Protocol: greedy
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=90.0% rep=0.0% strategies={'api_greedy': 10} eta=3min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [20/50] acc=85.0% rep=0.0% strategies={'api_greedy': 20} eta=4min
+  [30/50] acc=60.0% rep=0.0% strategies={'api_greedy': 30} eta=3min
+  [40/50] acc=62.5% rep=0.0% strategies={'api_greedy': 39, 'greedy_error': 1} eta=2min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=64.0% rep=0.0% strategies={'api_greedy': 49, 'greedy_error': 1} eta=0min
+  -> greedy: acc=64.0% rep=0.0% runtime=8.7min
+
+  Protocol: cove
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=80.0% rep=0.0% strategies={'api_cove': 9, 'cove_error': 1} eta=22min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [20/50] acc=75.0% rep=0.0% strategies={'api_cove': 18, 'cove_error': 2} eta=15min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [30/50] acc=53.3% rep=0.0% strategies={'api_cove': 28, 'cove_error': 2} eta=11min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [40/50] acc=57.5% rep=0.0% strategies={'api_cove': 37, 'cove_error': 3} eta=6min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=60.0% rep=0.0% strategies={'api_cove': 47, 'cove_error': 3} eta=0min
+  -> cove: acc=60.0% rep=0.0% runtime=28.0min
+
+  Protocol: cured_api
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=90.0% rep=0.0% strategies={'api_greedy_general': 10} eta=7min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [20/50] acc=85.0% rep=0.0% strategies={'api_greedy_general': 20} eta=5min
+  [30/50] acc=60.0% rep=0.0% strategies={'api_greedy_general': 29, 'cured_api_error': 1} eta=4min
+  [40/50] acc=62.5% rep=0.0% strategies={'api_greedy_general': 38, 'cured_api_error': 2} eta=2min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=64.0% rep=0.0% strategies={'api_greedy_general': 48, 'cured_api_error': 2} eta=0min
+  -> cured_api: acc=64.0% rep=0.0% runtime=9.2min
+
+==============================================================
+Benchmark: medhallu (n=50)
+
+  Protocol: greedy
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=0.0% rep=0.0% strategies={'api_greedy': 10} eta=6min
+  [20/50] acc=15.0% rep=0.0% strategies={'api_greedy': 20} eta=4min
+  [30/50] acc=20.0% rep=0.0% strategies={'api_greedy': 30} eta=2min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [40/50] acc=15.0% rep=0.0% strategies={'api_greedy': 40} eta=1min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=12.0% rep=0.0% strategies={'api_greedy': 50} eta=0min
+  -> greedy: acc=12.0% rep=0.0% runtime=6.2min
+
+  Protocol: cove
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=0.0% rep=0.0% strategies={'api_cove': 10} eta=16min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [20/50] acc=10.0% rep=0.0% strategies={'api_cove': 20} eta=13min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 2/4); retrying in 4.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [30/50] acc=13.3% rep=0.0% strategies={'api_cove': 30} eta=9min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [40/50] acc=10.0% rep=0.0% strategies={'api_cove': 39, 'cove_error': 1} eta=5min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=8.0% rep=0.0% strategies={'api_cove': 46, 'cove_error': 4} eta=0min
+  -> cove: acc=8.0% rep=0.0% runtime=27.0min
+
+  Protocol: cured_api
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [10/50] acc=0.0% rep=0.0% strategies={'api_cove_medical': 8, 'cured_api_error': 2} eta=30min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [20/50] acc=10.0% rep=0.0% strategies={'api_cove_medical': 15, 'cured_api_error': 3, 'api_greedy_general': 2} eta=19min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  [30/50] acc=16.7% rep=0.0% strategies={'api_cove_medical': 22, 'cured_api_error': 4, 'api_greedy_general': 4} eta=12min
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [40/50] acc=12.5% rep=0.0% strategies={'api_cove_medical': 31, 'cured_api_error': 4, 'api_greedy_general': 5} eta=6min
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  HTTP 500 from API (attempt 1/4); retrying in 2.0s
+  HTTP 429 from API (attempt 1/4); retrying in 2.0s
+  [50/50] acc=10.0% rep=0.0% strategies={'api_cove_medical': 40, 'cured_api_error': 4, 'api_greedy_general': 6} eta=0min
+  -> cured_api: acc=10.0% rep=0.0% runtime=26.7min
+
+====================================================================================
+CURED API RESULTS | mode=cloudflare model=@cf/meta/llama-3.1-8b-instruct
+====================================================================================
+protocol              truthfulqa          medhallu
+--------------------------------------------------
+greedy                     64.0%             12.0%
+cove                       60.0%              8.0%
+cured_api                  64.0%             10.0%
+
+Delta vs greedy:
+  cove                     -4.0%             -4.0%
+  cured_api                +0.0%             -2.0%
+
+CURED_API routing distribution:
+  truthfulqa: {'api_greedy_general': 0.96, 'cured_api_error': 0.04}
+  medhallu: {'api_cove_medical': 0.8, 'cured_api_error': 0.08, 'api_greedy_general': 0.12}
+====================================================================================
+
+Saved summary: results\results_cloudflare_both.json
+Saved per-question log: C:\Users\dongz\.cured_cache\per_question_api_cloudflare_1775776263.json

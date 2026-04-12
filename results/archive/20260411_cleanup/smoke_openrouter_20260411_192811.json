@@ -1,0 +1,31 @@
+{
+  "api_mode": "openrouter",
+  "api_models": [
+    "meta-llama/llama-3.1-8b-instruct"
+  ],
+  "protocols": [
+    "greedy"
+  ],
+  "benchmark": "custom",
+  "n_target": 1,
+  "max_new_tokens": 32,
+  "api_temperature": 0.0,
+  "cosine_threshold": 0.65,
+  "scoring": "letter",
+  "results": {
+    "meta-llama/llama-3.1-8b-instruct": {
+      "custom": {
+        "greedy": {
+          "n_total": 1,
+          "n_scored": 1,
+          "accuracy": 0.0,
+          "rep_rate": 0.0,
+          "routing": {
+            "api_greedy": 1.0
+          },
+          "runtime_min": 0.01
+        }
+      }
+    }
+  }
+}

@@ -17,6 +17,18 @@
 				"--resume"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "cloudflare-both-n3",
+			"type": "shell",
+			"command": "$ErrorActionPreference='Continue'; if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) { $PSNativeCommandUseErrorActionPreference = $false }; $env:CLOUDFLARE_API_TOKEN='cfut_qhWFMKDWHKeGdN4yNoKALE0Ic2r2iDN0NG9Sx7Rv80807bd8'; $env:CLOUDFLARE_ACCOUNT_ID='a0a25954e31bac6ca5ccad3ad5d1b529'; $env:CLOUDFLARE_API_MAX_RETRIES='3'; & 'c:/Users/dongz/OneDrive/Project Code/LLM_Hallucination/llm-env/Scripts/python.exe' cured.py --api-mode cloudflare --api-model '@cf/meta/llama-3.1-8b-instruct' --protocols greedy,cove,cured_api --benchmark both --n 3 --max-new-tokens 16 --out results/results_cloudflare_both_n3.json *> logs/cloudflare_both_n3.log; Write-Output ('exit=' + $LASTEXITCODE)",
+			"isBackground": false
+		},
+		{
+			"label": "cloudflare-both-n3-bg",
+			"type": "shell",
+			"command": "$ErrorActionPreference='Continue'; if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) { $PSNativeCommandUseErrorActionPreference = $false }; $env:CLOUDFLARE_API_TOKEN='cfut_qhWFMKDWHKeGdN4yNoKALE0Ic2r2iDN0NG9Sx7Rv80807bd8'; $env:CLOUDFLARE_ACCOUNT_ID='a0a25954e31bac6ca5ccad3ad5d1b529'; $env:CLOUDFLARE_API_MAX_RETRIES='3'; & 'c:/Users/dongz/OneDrive/Project Code/LLM_Hallucination/llm-env/Scripts/python.exe' cured.py --api-mode cloudflare --api-model '@cf/meta/llama-3.1-8b-instruct' --protocols greedy,cove,cured_api --benchmark both --n 3 --max-new-tokens 16 --out results/results_cloudflare_both_n3.json *> logs/cloudflare_both_n3_bg.log; Write-Output ('exit=' + $LASTEXITCODE)",
+			"isBackground": true
 		}
 	]
 }
