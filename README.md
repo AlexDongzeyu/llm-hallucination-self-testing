@@ -55,6 +55,14 @@ Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) a
 - `results/figures/*.png`
 - `raw_results.md`
 
+## Borrowed GPU Quickstart
+
+For a minimal copy-paste setup on a borrowed Linux GPU instance, use:
+
+- `scripts/autodl/QUICKSTART.md`
+- `scripts/autodl/bootstrap_gpu_env.sh`
+- `scripts/autodl/run_local_v2_suite.sh`
+
 ## Run Commands
 
 ```bash
