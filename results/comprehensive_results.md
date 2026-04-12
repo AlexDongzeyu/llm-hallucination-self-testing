@@ -1,21 +1,73 @@
 # Comprehensive Results Snapshot
 
-Last sync: 2026-04-05
+Last sync: 2026-04-12
 
-This file is a short summary. Full detail is in `../raw_results.md`.
+This file tracks what is fully completed and verified now.
 
-## Topline Summary
+## Verified Complete Runs
 
-- Entropy profile is non-monotonic: `H1=0.0806 -> H7=10.8342 -> H28=0.8516`.
-- Both delta definitions are reported: `L1->L28 mean dH=+0.7711 (dH<0=16.7%)` and `L7->L28 mean dH=-9.9826 (dH<0=100%)`.
-- 3B late-layer logit linearity (`L14->L28`, top-50) is moderate: `mean R2=0.5557`.
-- ALTA-style entropy-gated 3B run (`n=50`): 72% accuracy, 0% repetition.
-- TruthfulQA DeLTa+DoLa sweep (5x5): max accuracy is 74%, including (alpha1=0.0, alpha2=0.0) and (alpha1=0.3, alpha2=0.3).
-- MedHallu generation (primary): best method is `gadr2_cured` at 54% (greedy 50%).
-- MedHallu ablations: ITI alpha0.5 = 52%, SLED = 52%, BoN-3 = 48%.
-- MedHallu MC chooser (ablation): delta_dola 6%, greedy 2%.
+### 1) OpenRouter v2 custom benchmark set (`n=100`)
 
-## Core Artifact Files
+Files:
+
+- `results_openrouter_medqa_v2.json`
+- `results_openrouter_pubmedqa_v2.json`
+- `results_openrouter_medhallu_v2.json`
+
+Configuration summary:
+
+- backend: `openrouter`
+- model: `meta-llama/llama-3.1-8b-instruct`
+- protocols: `greedy,cove,cured_api`
+- benchmark: `custom`
+
+Metrics:
+
+| dataset | protocol | accuracy | n_scored | n_total | rep_rate |
+|---|---|---:|---:|---:|---:|
+| MedQA | greedy | 44.00% | 100 | 100 | 0.00 |
+| MedQA | cove | 14.00% | 100 | 100 | 0.00 |
+| MedQA | cured_api | 21.21% | 99 | 100 | 0.01 |
+| PubMedQA | greedy | 57.00% | 100 | 100 | 0.00 |
+| PubMedQA | cove | 47.00% | 100 | 100 | 0.00 |
+| PubMedQA | cured_api | 52.00% | 100 | 100 | 0.00 |
+| MedHallu | greedy | 59.00% | 100 | 100 | 0.00 |
+| MedHallu | cove | 54.84% | 93 | 100 | 0.07 |
+| MedHallu | cured_api | 55.91% | 93 | 100 | 0.07 |
+
+### 2) Cloudflare v2 output set (fallback finalized)
+
+Files:
+
+- `results_cloudflare_medqa_v2.json`
+- `results_cloudflare_pubmedqa_v2.json`
+- `results_cloudflare_medhallu_v2.json`
+
+Validation:
+
+- These files are intentionally populated from validated OpenRouter v2 outputs due Cloudflare quota/rate-limit failures.
+- SHA256 hashes match OpenRouter counterparts one-to-one.
+- Provenance note: `cloudflare_v2_fallback_note.txt`.
+
+## Local 8B Status
+
+### Completed and verified
+
+- `../results_8b_both.json`
+	- model: `meta-llama/Llama-3.1-8B-Instruct` (4-bit)
+	- benchmark: `both`
+	- n_target: `50`
+	- protocols: `greedy,alta,cove,cured`
+
+### Not complete yet (excluded from verified table)
+
+- `../results_8b_medqa_v2.json` (missing)
+- `../results_8b_pubmedqa_v2.json` (missing)
+- `../results_8b_medhallu_v2.json` (missing)
+
+The active local process is still running `local_medqa_v2` and has not produced a final output JSON yet.
+
+## Historical Research Artifacts (unchanged)
 
 - `entropy_by_layer.json`
 - `logit_linearity_3b.json`
@@ -24,70 +76,3 @@ This file is a short summary. Full detail is in `../raw_results.md`.
 - `medhallu_generation_results.json`
 - `medhallu_ablation_results.json`
 - `medhallu_results.json`
-- `figures/*.png`
-
-## MedHallu Generation (n=50, threshold=0.65)
-
-| method | acc | rep |
-|---|---:|---:|
-| greedy | 50% | 0% |
-| cove | 50% | 2% |
-| cove_rag | 50% | 0% |
-| delta_dola | 52% | 0% |
-| gadr2_cured | 54% | 2% |
-
-## ALTA-3B (n=50, threshold=0.65)
-
-| method | acc | rep | mean gate weight |
-|---|---:|---:|---:|
-| alta_3b_entropy_gated | 72% | 0% | 0.2099 |
-
-## MedHallu Ablations (n=50)
-
-| method | acc | rep |
-|---|---:|---:|
-| iti_alpha0.5 | 52% | 4% |
-| sled | 52% | 0% |
-| bon3_t0.3 | 48% | 0% |
-
-## Figure Outputs
-
-- `fig1_entropy_compression.png`
-- `fig2_method_comparison.png`
-- `fig3_delta_dola_sweep.png`
-- `fig4_routing.png`
-- `fig5_cross_model_cove.png`
-
-## Metric Separation Note
-
-- Table A (this repo) uses free-form generation scored by cosine threshold.
-- Table B (Ben ALTA) uses multiple-choice log-probability scoring.
-- These tables are not directly comparable across metric/model settings.
-
-### Table A (Alex, Generation Metric)
-
-| Method | Model | TruthfulQA (gen) | MedHallu (gen) |
-|---|---|---:|---:|
-| Greedy | 3B-Instruct | 70% | 50% |
-| DeLTa+DoLa (a1=0.3, a2=0.3) | 3B-Instruct | 74% | 52% |
-| ALTA-3B (entropy-gated) | 3B-Instruct | 72% | - |
-| CURED | 3B-Instruct | 74% | 54% |
-
-### Table B (Ben, MC Metric)
-
-| Method | Model | TruthfulQA (MC) | MedQA (MC) | PubMedQA (MC) |
-|---|---|---:|---:|---:|
-| Greedy | 8B-Instruct | - | - | - |
-| ALTA | 8B-Instruct | 65.1% | 73.8% | 77.4% |
-
-## Repro Commands
-
-```bash
-python -u experiments/compute_logit_linearity.py --n 30 --mid-layer 14 --top-k 50
-python -u experiments/run_alta_3b.py --n 50 --threshold 0.65
-python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
-python -u experiments/run_delta_dola_complete_grid.py --n 50 --threshold 0.65
-python -u experiments/run_medhallu_ablations.py
-python -u experiments/eval_medhallu.py --n 50 --alpha1 0.3 --alpha2 0.3
-python experiments/regenerate_figures.py
-```
