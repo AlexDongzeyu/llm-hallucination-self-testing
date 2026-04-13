@@ -13,7 +13,7 @@ from datetime import datetime
 ROOT = Path(__file__).resolve().parents[1]
 MED_PATH = ROOT / "results" / "medhallu_results.json"
 README_PATH = ROOT / "README.md"
-COMPREHENSIVE_PATH = ROOT / "results" / "comprehensive_results.md"
+COMPREHENSIVE_PATH = ROOT / "comprehensive_results.md"
 SUMMARY_OUT = ROOT / "results" / "medhallu_latest_summary.md"
 
 
@@ -55,8 +55,9 @@ def maybe_update_comprehensive_timestamp() -> bool:
 
     text = COMPREHENSIVE_PATH.read_text(encoding="utf-8")
     today = datetime.now().strftime("%Y-%m-%d")
-    marker = "Last sync:"
-    if marker not in text:
+    markers = ["Last update:", "Last sync:"]
+    marker = next((m for m in markers if m in text), None)
+    if marker is None:
         return False
 
     updated = []
@@ -85,7 +86,7 @@ def main() -> None:
     if README_PATH.exists():
         # Keep README update behavior lightweight and non-destructive.
         readme = README_PATH.read_text(encoding="utf-8")
-        needle = "- For current status narrative, use results/comprehensive_results.md."
+        needle = "- For current status narrative, use comprehensive_results.md."
         extra = "- Generated MedHallu quick summary: results/medhallu_latest_summary.md"
         if needle in readme and extra not in readme:
             README_PATH.write_text(readme.replace(needle, needle + "\n" + extra), encoding="utf-8")
