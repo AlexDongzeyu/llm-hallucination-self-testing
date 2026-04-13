@@ -300,6 +300,144 @@ def yesno_match(generated: str, reference: str) -> bool:
     return pred == ref
 
 
+def _to_binary_labels(labels: list[Any]) -> np.ndarray:
+    out: list[float] = []
+    for label in labels:
+        if isinstance(label, (bool, np.bool_)):
+            out.append(1.0 if bool(label) else 0.0)
+            continue
+
+        try:
+            out.append(1.0 if int(label) == 1 else 0.0)
+            continue
+        except Exception:
+            pass
+
+        s = str(label).strip().lower()
+        out.append(1.0 if s in {"1", "true", "yes"} else 0.0)
+
+    return np.asarray(out, dtype=np.float32)
+
+
+def _average_choice_log_prob(model: Any, tokenizer: Any, question: str, choice: str) -> float:
+    dev = get_model_device(model)
+    prompt_text = format_prompt(tokenizer, question)
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": question},
+        {"role": "assistant", "content": str(choice)},
+    ]
+    try:
+        full_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    except Exception:
+        full_text = f"Question: {question}\nAnswer: {choice}"
+
+    try:
+        prompt_ids = tokenizer.encode(prompt_text, add_special_tokens=False)
+        full_ids = tokenizer.encode(full_text, add_special_tokens=False)
+    except Exception:
+        prompt_ids = tokenizer.encode(prompt_text)
+        full_ids = tokenizer.encode(full_text)
+
+    if len(full_ids) <= len(prompt_ids):
+        try:
+            answer_ids = tokenizer.encode(" " + str(choice).strip(), add_special_tokens=False)
+        except Exception:
+            answer_ids = tokenizer.encode(" " + str(choice).strip())
+        full_ids = list(prompt_ids) + list(answer_ids)
+
+    prompt_len = len(prompt_ids)
+    if prompt_len <= 0 or len(full_ids) <= prompt_len:
+        return -999.0
+
+    input_ids = torch.tensor([full_ids], device=dev)
+    with torch.no_grad():
+        out = model(input_ids=input_ids, use_cache=False)
+
+    shift_logits = out.logits[0, prompt_len - 1 : -1, :]
+    shift_labels = input_ids[0, prompt_len:]
+
+    if shift_logits.shape[0] == 0 or shift_labels.numel() == 0:
+        return -999.0
+
+    if shift_logits.shape[0] != shift_labels.shape[0]:
+        n = min(int(shift_logits.shape[0]), int(shift_labels.shape[0]))
+        if n <= 0:
+            return -999.0
+        shift_logits = shift_logits[:n, :]
+        shift_labels = shift_labels[:n]
+
+    lp = torch.nn.functional.log_softmax(shift_logits, dim=-1)
+    token_lps = lp.gather(1, shift_labels.unsqueeze(1)).squeeze(1)
+    return float(token_lps.mean().detach().cpu())
+
+
+def mc_score_sample(
+    model: Any,
+    tokenizer: Any,
+    question: str,
+    choices: list[str],
+    labels: list[int],
+    choices_mc2: list[str] | None = None,
+    labels_mc2: list[int] | None = None,
+) -> dict[str, float]:
+    """
+    TruthfulQA MC1/MC2 scoring using candidate log-likelihoods.
+
+    MC1: top-probability answer is correct (single-best correctness).
+    MC2: normalized probability mass assigned to all correct answers.
+    """
+    if not choices or not labels:
+        return {"mc1": 0.0, "mc2": 0.0}
+
+    mc1_log_probs = np.asarray(
+        [_average_choice_log_prob(model, tokenizer, question, c) for c in choices],
+        dtype=np.float32,
+    )
+    mc1_labels = _to_binary_labels(labels)
+
+    if mc1_log_probs.shape[0] != mc1_labels.shape[0]:
+        n = min(int(mc1_log_probs.shape[0]), int(mc1_labels.shape[0]))
+        mc1_log_probs = mc1_log_probs[:n]
+        mc1_labels = mc1_labels[:n]
+
+    if mc1_log_probs.size == 0 or mc1_labels.size == 0:
+        return {"mc1": 0.0, "mc2": 0.0}
+
+    best_idx = int(np.argmax(mc1_log_probs))
+    mc1 = float(mc1_labels[best_idx] == 1.0)
+
+    use_mc2_choices = choices_mc2 if choices_mc2 else choices
+    use_mc2_labels = labels_mc2 if labels_mc2 else labels
+    mc2_log_probs = np.asarray(
+        [_average_choice_log_prob(model, tokenizer, question, c) for c in use_mc2_choices],
+        dtype=np.float32,
+    )
+    mc2_labels = _to_binary_labels(use_mc2_labels)
+
+    if mc2_log_probs.shape[0] != mc2_labels.shape[0]:
+        n = min(int(mc2_log_probs.shape[0]), int(mc2_labels.shape[0]))
+        mc2_log_probs = mc2_log_probs[:n]
+        mc2_labels = mc2_labels[:n]
+
+    if mc2_log_probs.size == 0 or mc2_labels.size == 0:
+        return {"mc1": mc1, "mc2": 0.0}
+
+    probs = np.exp(mc2_log_probs - np.max(mc2_log_probs))
+    denom = float(np.sum(probs))
+    if denom <= 0.0:
+        return {"mc1": mc1, "mc2": 0.0}
+    probs = probs / denom
+
+    correct_prob = float(np.sum(probs * mc2_labels))
+    wrong_prob = float(np.sum(probs * (1.0 - mc2_labels)))
+    total_prob = correct_prob + wrong_prob
+    mc2 = correct_prob / total_prob if total_prob > 0 else 0.0
+
+    return {"mc1": mc1, "mc2": float(mc2)}
+
+
 def _extract_option_letter(text: str) -> str | None:
     if not (text or "").strip():
         return None
@@ -1493,8 +1631,23 @@ class CUREDAPIRouter:
         self.api_model = api_model
         self.api_temperature = float(api_temperature)
 
-    def route(self, question: str, max_new_tokens: int = 80) -> dict[str, Any]:
+    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
         domain = detect_domain(question)
+
+        if scoring in ("letter", "yesno"):
+            text = api_generate(
+                api_mode=self.api_mode,
+                api_model=self.api_model,
+                prompt=question,
+                max_new_tokens=max_new_tokens,
+                temperature=self.api_temperature,
+            )
+            return {
+                "text": text,
+                "strategy": f"api_greedy_{domain}_structured",
+                "domain": domain,
+            }
+
         if domain == "general":
             text = api_generate(
                 api_mode=self.api_mode,
@@ -1995,9 +2148,28 @@ class CUREDRouter:
         self.alta_viable = self.mean_r2 >= ALTA_R2_CUTOFF
         self.iti_available = self.top_heads is not None and self.head_vectors is not None
 
-    def route(self, question: str, max_new_tokens: int = 80) -> dict[str, Any]:
+    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
         domain = detect_domain(question)
         prompt = format_prompt(self.tokenizer, question)
+
+        if scoring in ("letter", "yesno"):
+            if self.alta_viable:
+                out = alta_generate(self.model, self.tokenizer, prompt, max_new_tokens=max_new_tokens)
+                return {
+                    "text": out["text"],
+                    "strategy": f"alta_{domain}_structured",
+                    "domain": domain,
+                    "r2": round(self.mean_r2, 4),
+                    "alta_gate": round(float(out["mean_gate"]), 4),
+                }
+
+            text = greedy_generate(self.model, self.tokenizer, prompt, max_new_tokens=max_new_tokens)
+            return {
+                "text": text,
+                "strategy": f"greedy_{domain}_structured",
+                "domain": domain,
+                "r2": round(self.mean_r2, 4),
+            }
 
         if domain == "general":
             if self.alta_viable:
@@ -2062,7 +2234,42 @@ class CUREDRouter:
 # ---------------------------------------------------------------------------
 
 
-def load_truthfulqa(n: int) -> list[dict[str, Any]]:
+def _first_positive_choice(choices: list[str], labels: list[Any]) -> str:
+    for choice, label in zip(choices, labels):
+        try:
+            if int(label) == 1:
+                return str(choice)
+        except Exception:
+            if str(label).strip().lower() in {"1", "true", "yes"}:
+                return str(choice)
+    return ""
+
+
+def load_truthfulqa(n: int, scoring: str = "cosine") -> list[dict[str, Any]]:
+    if scoring == "mc":
+        ds = load_dataset("truthful_qa", "multiple_choice", split="validation")
+        out = []
+        for row in ds.select(range(min(int(n), len(ds)))):
+            mc1 = row.get("mc1_targets", {}) or {}
+            mc2 = row.get("mc2_targets", {}) or {}
+            mc1_choices = [str(c) for c in mc1.get("choices", [])]
+            mc1_labels = list(mc1.get("labels", []))
+            mc2_choices = [str(c) for c in mc2.get("choices", [])]
+            mc2_labels = list(mc2.get("labels", []))
+            out.append(
+                {
+                    "question": str(row["question"]),
+                    "reference": _first_positive_choice(mc1_choices, mc1_labels),
+                    "domain": "general",
+                    "dataset": "truthfulqa_mc",
+                    "mc1_choices": mc1_choices,
+                    "mc1_labels": mc1_labels,
+                    "mc2_choices": mc2_choices,
+                    "mc2_labels": mc2_labels,
+                }
+            )
+        return out
+
     ds = load_dataset("truthful_qa", "generation", split="validation")
     out = []
     for row in ds.select(range(min(int(n), len(ds)))):
@@ -2145,6 +2352,9 @@ def run_protocol(
     correct = 0
     repeated = 0
     scored = 0
+    mc_scored = 0
+    mc1_total = 0.0
+    mc2_total = 0.0
     by_strategy: dict[str, int] = {}
     per_question: list[dict[str, Any]] = []
 
@@ -2208,7 +2418,7 @@ def run_protocol(
             extra = {"consistency": round(float(out["consistency"]), 4), "n_samples": int(out["n_samples"])}
 
         elif protocol == "cured":
-            out = router.route(q, max_new_tokens=max_new_tokens)
+            out = router.route(q, max_new_tokens=max_new_tokens, scoring=scoring)
             text = out["text"]
             strategy = out["strategy"]
             extra = {k: v for k, v in out.items() if k not in ("text", "strategy")}
@@ -2224,7 +2434,45 @@ def run_protocol(
 
         has_ref = isinstance(ref, str) and bool(ref.strip())
         is_correct = False
-        if (not rep) and has_ref:
+        if scoring == "mc":
+            mc1_choices = sample.get("mc1_choices")
+            mc1_labels = sample.get("mc1_labels")
+            mc2_choices = sample.get("mc2_choices")
+            mc2_labels = sample.get("mc2_labels")
+            if isinstance(mc1_choices, list) and isinstance(mc1_labels, list) and mc1_choices and mc1_labels:
+                mc_scores = mc_score_sample(
+                    model=model,
+                    tokenizer=tokenizer,
+                    question=q,
+                    choices=[str(c) for c in mc1_choices],
+                    labels=list(mc1_labels),
+                    choices_mc2=[str(c) for c in mc2_choices] if isinstance(mc2_choices, list) else None,
+                    labels_mc2=list(mc2_labels) if isinstance(mc2_labels, list) else None,
+                )
+                scored += 1
+                mc_scored += 1
+                mc1_val = float(mc_scores["mc1"])
+                mc2_val = float(mc_scores["mc2"])
+                mc1_total += mc1_val
+                mc2_total += mc2_val
+                is_correct = mc1_val >= 0.5
+                if is_correct:
+                    correct += 1
+                extra["mc1"] = round(mc1_val, 4)
+                extra["mc2"] = round(mc2_val, 4)
+            elif (not rep) and has_ref:
+                scored += 1
+                is_correct = reference_match(
+                    scorer=scorer,
+                    sample=sample,
+                    generated=text,
+                    reference=ref,
+                    threshold=cosine_threshold,
+                    scoring=scoring,
+                )
+                if is_correct:
+                    correct += 1
+        elif (not rep) and has_ref:
             scored += 1
             is_correct = reference_match(
                 scorer=scorer,
@@ -2263,11 +2511,17 @@ def run_protocol(
 
     n_total = len(samples)
     accuracy = (correct / scored) if scored else None
+    mc1 = (mc1_total / mc_scored) if mc_scored else None
+    mc2 = (mc2_total / mc_scored) if mc_scored else None
+    if scoring == "mc" and mc1 is not None:
+        accuracy = mc1
 
     return {
         "n_total": n_total,
         "n_scored": scored,
         "accuracy": round(float(accuracy), 4) if accuracy is not None else None,
+        "mc1": round(float(mc1), 4) if mc1 is not None else None,
+        "mc2": round(float(mc2), 4) if mc2 is not None else None,
         "rep_rate": round(repeated / max(n_total, 1), 4),
         "routing": {k: round(v / max(n_total, 1), 4) for k, v in by_strategy.items()},
         "runtime_min": round((time.time() - t0) / 60.0, 2),
@@ -2320,7 +2574,7 @@ def run_api_protocol(
                 )
                 strategy = "api_cove"
             elif protocol == "cured_api":
-                out = api_router.route(q, max_new_tokens=max_new_tokens)
+                out = api_router.route(q, max_new_tokens=max_new_tokens, scoring=scoring)
                 text = out["text"]
                 strategy = out["strategy"]
                 extra = {k: v for k, v in out.items() if k not in ("text", "strategy")}
@@ -2606,7 +2860,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--scoring",
         default="cosine",
-        choices=["cosine", "letter", "yesno"],
+        choices=["cosine", "letter", "yesno", "mc"],
         help="Reference scoring mode for evaluation.",
     )
     parser.add_argument("--selfcheck-k", type=int, default=4)
@@ -2651,6 +2905,9 @@ def main() -> None:
         if unknown:
             raise ValueError(f"Unknown API protocols: {unknown}. Valid: {API_PROTOCOLS}")
 
+        if str(args.scoring) == "mc":
+            raise ValueError("--scoring mc is only supported in local model mode (--api-mode none).")
+
         api_models = parse_csv_list(args.api_model)
         if not api_models:
             raise ValueError("--api-model is required when --api-mode is set.")
@@ -2662,7 +2919,7 @@ def main() -> None:
             p(f"\nQuestion: {question}")
             for api_model in api_models:
                 router = CUREDAPIRouter(args.api_mode, api_model, api_temperature=args.api_temperature)
-                out = router.route(question, max_new_tokens=args.max_new_tokens)
+                out = router.route(question, max_new_tokens=args.max_new_tokens, scoring=str(args.scoring))
                 p(f"\nModel:    {api_model}")
                 p(f"Answer:   {out['text']}")
                 p(f"Strategy: {out['strategy']} | domain={out.get('domain')}")
@@ -2673,7 +2930,7 @@ def main() -> None:
 
         benchmark_data: dict[str, list[dict[str, Any]]] = {}
         if args.benchmark in ("both", "truthfulqa"):
-            benchmark_data["truthfulqa"] = load_truthfulqa(args.n)
+            benchmark_data["truthfulqa"] = load_truthfulqa(args.n, scoring=str(args.scoring))
             p(f"Loaded TruthfulQA: n={len(benchmark_data['truthfulqa'])}")
         if args.benchmark in ("both", "medhallu"):
             benchmark_data["medhallu"] = load_medhallu_generation(args.n)
@@ -2837,7 +3094,7 @@ def main() -> None:
 
     if args.question.strip():
         question = args.question.strip()
-        out = router.route(question, max_new_tokens=args.max_new_tokens)
+        out = router.route(question, max_new_tokens=args.max_new_tokens, scoring=str(args.scoring))
         p(f"\nQuestion: {question}")
         p(f"Answer:   {out['text']}")
         p(f"Strategy: {out['strategy']} | domain={out.get('domain')}")
@@ -2849,7 +3106,7 @@ def main() -> None:
 
     benchmark_data: dict[str, list[dict[str, Any]]] = {}
     if args.benchmark in ("both", "truthfulqa"):
-        benchmark_data["truthfulqa"] = load_truthfulqa(args.n)
+        benchmark_data["truthfulqa"] = load_truthfulqa(args.n, scoring=str(args.scoring))
         p(f"Loaded TruthfulQA: n={len(benchmark_data['truthfulqa'])}")
     if args.benchmark in ("both", "medhallu"):
         benchmark_data["medhallu"] = load_medhallu_generation(args.n)

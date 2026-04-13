@@ -30,9 +30,9 @@ if /i "%JOB%"=="both" (
   set "EXITFILE=logs\openrouter_both_full.exit.txt"
   set "ARGS=--benchmark both --n 50 --scoring cosine --max-new-tokens 16"
 ) else if /i "%JOB%"=="medqa" (
-  set "OUT=results\results_openrouter_medqa.json"
-  set "LOG=logs\openrouter_medqa_full.log"
-  set "EXITFILE=logs\openrouter_medqa_full.exit.txt"
+  set "OUT=results\results_openrouter_medqa_v2.json"
+  set "LOG=logs\openrouter_medqa_v2.log"
+  set "EXITFILE=logs\openrouter_medqa_v2.exit.txt"
   set "ARGS=--benchmark custom --custom-csv benchmarks\medqa_usmle_n200.csv --n 100 --scoring letter --max-new-tokens 40"
 ) else if /i "%JOB%"=="pubmedqa" (
   set "OUT=results\results_openrouter_pubmedqa.json"
