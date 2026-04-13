@@ -109,4 +109,38 @@ log "JOB 6: MedHallu 3B built-in n=100"
   > "logs/3b_medhallu_n100_${TS}.log" 2>&1
 log "JOB 6 DONE"
 
+# =============================================================================
+# JOB 7: StrategyQA - 8B, n=500, yesno scoring
+# Same benchmark as DoLA, DeLTa, SLED for direct comparison
+# =============================================================================
+log "JOB 7: StrategyQA 8B n=500"
+"$PYTHON" -u cured.py \
+  --model "$MODEL_8B" --load-in-4bit --skip-iti \
+  --protocols greedy,alta,cove,cured \
+  --benchmark custom \
+  --custom-csv benchmarks/strategyqa_n500.csv \
+  --question-col question \
+  --answer-col answer \
+  --n 500 --scoring yesno --max-new-tokens 10 \
+  --out "$CANONICAL_DIR/results_8b_strategyqa_v1.json" \
+  > "logs/8b_strategyqa_${TS}.log" 2>&1
+log "JOB 7 DONE"
+
+# =============================================================================
+# JOB 8: TriviaQA - 8B, n=1000, cosine scoring
+# Same benchmark as DeLTa for direct comparison
+# =============================================================================
+log "JOB 8: TriviaQA 8B n=1000"
+"$PYTHON" -u cured.py \
+  --model "$MODEL_8B" --load-in-4bit --skip-iti \
+  --protocols greedy,alta,cove,cured \
+  --benchmark custom \
+  --custom-csv benchmarks/triviaqa_n1000.csv \
+  --question-col question \
+  --answer-col answer \
+  --n 1000 --scoring cosine --max-new-tokens 20 \
+  --out "$CANONICAL_DIR/results_8b_triviaqa_v1.json" \
+  > "logs/8b_triviaqa_${TS}.log" 2>&1
+log "JOB 8 DONE"
+
 log "ALL JOBS COMPLETE. Check results/ directory."
