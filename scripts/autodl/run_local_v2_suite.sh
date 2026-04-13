@@ -9,6 +9,7 @@ PYTHON_BIN="${PYTHON_BIN:-${ROOT_DIR}/llm-env/bin/python}"
 MODEL_ID="${MODEL_ID:-meta-llama/Llama-3.1-8B-Instruct}"
 N_CUSTOM="${N_CUSTOM:-100}"
 PROTOCOLS="${PROTOCOLS:-greedy,alta,cove,cured}"
+CANONICAL_DIR="results/CANONICAL_v2"
 LOAD_IN_4BIT="${LOAD_IN_4BIT:-1}"
 SKIP_ITI="${SKIP_ITI:-1}"
 FORCE_RERUN="${FORCE_RERUN:-0}"
@@ -20,7 +21,7 @@ if [ ! -x "${PYTHON_BIN}" ]; then
   exit 1
 fi
 
-mkdir -p logs results
+mkdir -p logs "${CANONICAL_DIR}"
 
 run_job() {
   local name="$1"
@@ -64,8 +65,8 @@ run_job() {
   echo "[DONE] ${name}"
 }
 
-run_job "local_medqa_v2" "benchmarks/medqa_usmle_n200.csv" "letter" "40" "results_8b_medqa_v2.json"
-run_job "local_pubmedqa_v2" "benchmarks/pubmedqa_n200.csv" "yesno" "10" "results_8b_pubmedqa_v2.json"
-run_job "local_medhallu_v2" "benchmarks/medhallu_n200.csv" "cosine" "80" "results_8b_medhallu_v2.json"
+run_job "local_medqa_v2" "benchmarks/medqa_usmle_n200.csv" "letter" "40" "${CANONICAL_DIR}/results_8b_medqa_v2.json"
+run_job "local_pubmedqa_v2" "benchmarks/pubmedqa_n200.csv" "yesno" "10" "${CANONICAL_DIR}/results_8b_pubmedqa_v2.json"
+run_job "local_medhallu_v2" "benchmarks/medhallu_n200.csv" "cosine" "80" "${CANONICAL_DIR}/results_8b_medhallu_v2.json"
 
 echo "[DONE] Local v2 suite complete."

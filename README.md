@@ -2,88 +2,59 @@
 
 Inference-time hallucination mitigation experiments for RLHF-tuned LLMs.
 
-## Current Snapshot (2026-04-05)
+## Repository Layout
 
-Model: Llama-3.2-3B-Instruct.
+- cured.py: unified runner for local and API evaluation protocols.
+- benchmarks/: benchmark CSV inputs.
+- experiments/: one-off and paper-generation experiment scripts.
+- scripts/: reproducible automation scripts (GPU setup, API jobs, CSV rebuilders).
+- src/: reusable model-analysis and decoding modules.
+- results/: persistent structured artifacts.
+- logs/: runtime logs.
 
-- Entropy shape (`n=30`): `H1=0.0806 -> H7=10.8342 -> H28=0.8516`; `L1->L28 mean dH=+0.7711 (dH<0=16.7%)`, `L7->L28 mean dH=-9.9826 (dH<0=100%)`.
-- 3B late-layer diagnostics (`L14->L28`, top-50 logits, `n=30`): `mean R2=0.5557`, `median R2=0.5770`, `std=0.0696`; late-layer CV (L21-L28) `0.582-0.838`.
-- ALTA-style 3B entropy-gated correction (`n=50`, threshold `0.65`): `72%` accuracy, `0%` repetition, mean gate weight `0.2099`.
-- TruthfulQA DeLTa+DoLa 5x5 sweep (`n=50`, threshold `0.65`): best `74%` at `(alpha1=0.3, alpha2=0.3)`, and the greedy point `(0.0, 0.0)` is also `74%`.
-- MedHallu generation (`n=50`, threshold `0.65`): best strategy is `gadr2_cured` at `54%`.
+## Canonical Result Location
 
-## Metric Note
+Use results/CANONICAL_v2 as the single source of truth for reportable final tables.
 
-- Do not directly compare Alex TruthfulQA cosine-threshold accuracy with Ben ALTA `%True x %Info`; they are different metrics on different models.
+Expected final files:
 
-## R2 Framing
-
-- This repo measures late-layer trajectory linearity at 3B as `mean R2=0.5557` (layers 14-28).
-- DeLTa (He et al., 2025) reports higher late-layer linearity for 7B+ models (paper figures, commonly reported in the `~0.75-0.85` range).
-- This provides a scale-linked context for trajectory-based correction behavior across model sizes.
-
-### MedHallu Generation Results
-
-| Method | Accuracy | Repetition |
-|---|---:|---:|
-| greedy | 50% | 0% |
-| cove | 50% | 2% |
-| cove_rag | 50% | 0% |
-| delta_dola | 52% | 0% |
-| **gadr2_cured** | **54%** | 2% |
-
-### MedHallu Ablations
-
-| Method | Accuracy | Repetition |
-|---|---:|---:|
-| iti_alpha0.5 | 52% | 4% |
-| sled | 52% | 0% |
-| bon3_t0.3 | 48% | 0% |
-
-Note: SelfCheck is available for TruthfulQA (`results/selfcheck_results.json`) and is not run on MedHallu in the current pipeline.
-
-## Canonical Files
-
-- `results/entropy_by_layer.json`
-- `results/logit_linearity_3b.json`
-- `results/alta_3b_results.json`
-- `results/truthfulqa_delta_dola_sweep.json`
-- `results/medhallu_generation_results.json`
-- `results/medhallu_ablation_results.json`
-- `results/medhallu_results.json`
-- `results/online_openrouter_status.md`
-- `results/figures/*.png`
-- `raw_results.md`
+- results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json
+- results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json
+- results/CANONICAL_v2/results_8b_medhallu_v2.json
+- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
+- results/CANONICAL_v2/results_8b_medqa_v3_fixed.json
+- results/CANONICAL_v2/results_3b_medhallu_n100.json
+- results/CANONICAL_v2/results_openrouter_medqa_v2.json
+- results/CANONICAL_v2/results_openrouter_pubmedqa_v2.json
+- results/CANONICAL_v2/results_openrouter_medhallu_v2.json
 
 ## Borrowed GPU Quickstart
 
-For a minimal copy-paste setup on a borrowed Linux GPU instance, use:
+See scripts/autodl/QUICKSTART.md.
 
-- `scripts/autodl/QUICKSTART.md`
-- `scripts/autodl/bootstrap_gpu_env.sh`
-- `scripts/autodl/run_local_v2_suite.sh`
+Minimal flow:
 
-## Run Commands
+1) bash scripts/autodl/bootstrap_gpu_env.sh
+2) bash scripts/autodl/run_final_suite.sh
+3) bash scripts/autodl/organize_final_results.sh
 
-```bash
-# MedHallu generation (primary)
-python -u experiments/run_medhallu_generation.py --n 50 --threshold 0.65
+## API Rerun Helper (Windows)
 
-# 3B late-layer logit linearity diagnostic
-python -u experiments/compute_logit_linearity.py --n 30 --mid-layer 14 --top-k 50
+For the fixed MedQA API rerun:
 
-# ALTA-style entropy-gated 3B run
-python -u experiments/run_alta_3b.py --n 50 --threshold 0.65
+scripts\\run_openrouter_job.cmd medqa
 
-# TruthfulQA DeLTa+DoLa full grid
-python -u experiments/run_delta_dola_complete_grid.py --n 50 --threshold 0.65
+This writes results/results_openrouter_medqa_v2.json.
 
-# MedHallu ablations (SLED/BoN/ITI)
-python -u experiments/run_medhallu_ablations.py
+## Scoring Modes
 
-# MedHallu MC chooser (ablation)
-python -u experiments/eval_medhallu.py --n 50 --alpha1 0.3 --alpha2 0.3
+- cosine: semantic similarity scoring (default for free-form QA).
+- letter: multiple-choice letter scoring.
+- yesno: binary yes/no/maybe scoring.
+- mc: TruthfulQA multiple-choice likelihood scoring with MC1/MC2 summary fields.
 
-# Regenerate all figures
-python experiments/regenerate_figures.py
-```
+## Notes
+
+- Legacy or invalid artifacts should be moved to results/archive.
+- Top-level result JSON files are considered legacy and should be normalized via scripts/autodl/organize_final_results.sh.
+- For current status narrative, use results/comprehensive_results.md.

@@ -4,3 +4,7 @@ trajectory_plot.png
 __pycache__/
 *.pyc
 .env
+
+# Keep canonical outputs under results/CANONICAL_v2, not repo root.
+/results_8b_*.json
+/results_3b_*.json

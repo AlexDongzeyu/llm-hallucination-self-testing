@@ -1,6 +1,7 @@
 # Borrowed GPU Quickstart
 
-These steps keep the current repository layout and output filenames unchanged.
+These steps run the clean final workflow and write canonical outputs into
+results/CANONICAL_v2.
 
 ## 1) Copy-paste setup commands (Linux GPU instance)
 
@@ -10,21 +11,36 @@ cd llm-hallucination-self-testing
 bash scripts/autodl/bootstrap_gpu_env.sh
 ```
 
-## 2) Run the full local v2 custom suite
+## 2) Run the complete final suite (recommended)
+
+```bash
+bash scripts/autodl/run_final_suite.sh
+```
+
+Primary outputs written to results/CANONICAL_v2:
+
+- results_8b_truthfulqa_full_mc.json
+- results_3b_truthfulqa_full_mc.json
+- results_8b_medhallu_v2.json
+- results_8b_pubmedqa_v2.json
+- results_8b_medqa_v3_fixed.json
+- results_3b_medhallu_n100.json
+
+and logs under `logs/` with timestamped names.
+
+## 3) Optional: run only the local 8B custom subset
 
 ```bash
 bash scripts/autodl/run_local_v2_suite.sh
 ```
 
-This writes the canonical local v2 outputs:
+This writes:
 
-- `results_8b_medqa_v2.json`
-- `results_8b_pubmedqa_v2.json`
-- `results_8b_medhallu_v2.json`
+- results/CANONICAL_v2/results_8b_medqa_v2.json
+- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
+- results/CANONICAL_v2/results_8b_medhallu_v2.json
 
-and logs under `logs/` with timestamped names.
-
-## 3) Optional useful variants
+## 4) Optional useful variants
 
 Run only if you need to rerun existing outputs:
 
@@ -43,3 +59,12 @@ Use a different model id:
 ```bash
 MODEL_ID=meta-llama/Llama-3.1-8B-Instruct bash scripts/autodl/run_local_v2_suite.sh
 ```
+
+## 5) Post-run normalization and cleanup
+
+```bash
+bash scripts/autodl/organize_final_results.sh
+```
+
+This moves legacy root-level outputs into results/CANONICAL_v2 and archives
+legacy API v1 outputs under results/archive.

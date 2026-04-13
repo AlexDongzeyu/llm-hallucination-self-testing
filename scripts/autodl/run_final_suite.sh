@@ -11,8 +11,9 @@ cd "$ROOT"
 PYTHON="${PYTHON_BIN:-$ROOT/llm-env/bin/python}"
 MODEL_8B="meta-llama/Llama-3.1-8B-Instruct"
 MODEL_3B="meta-llama/Llama-3.2-3B-Instruct"
+CANONICAL_DIR="results/CANONICAL_v2"
 TS="$(date +%Y%m%d_%H%M%S)"
-mkdir -p logs results
+mkdir -p logs "$CANONICAL_DIR"
 
 if [ ! -x "$PYTHON" ]; then
   echo "[ERROR] Python executable not found: $PYTHON" >&2
@@ -33,7 +34,7 @@ log "JOB 1: TruthfulQA FULL 817 - MC1/MC2 scoring"
   --n 817 \
   --scoring mc \
   --max-new-tokens 50 \
-  --out "results/results_8b_truthfulqa_full_mc.json" \
+  --out "$CANONICAL_DIR/results_8b_truthfulqa_full_mc.json" \
   > "logs/8b_truthfulqa_full_mc_${TS}.log" 2>&1
 log "JOB 1 DONE"
 
@@ -48,7 +49,7 @@ log "JOB 2: TruthfulQA FULL 817 - 3B model"
   --n 817 \
   --scoring mc \
   --max-new-tokens 50 \
-  --out "results/results_3b_truthfulqa_full_mc.json" \
+  --out "$CANONICAL_DIR/results_3b_truthfulqa_full_mc.json" \
   > "logs/3b_truthfulqa_full_mc_${TS}.log" 2>&1
 log "JOB 2 DONE"
 
@@ -62,7 +63,7 @@ log "JOB 3: MedHallu 8B n=100"
   --benchmark custom \
   --custom-csv benchmarks/medhallu_n200.csv \
   --n 100 --scoring cosine --max-new-tokens 80 \
-  --out "results_8b_medhallu_v2.json" \
+  --out "$CANONICAL_DIR/results_8b_medhallu_v2.json" \
   > "logs/8b_medhallu_v2_${TS}.log" 2>&1
 log "JOB 3 DONE"
 
@@ -76,7 +77,7 @@ log "JOB 4: PubMedQA 8B n=100"
   --benchmark custom \
   --custom-csv benchmarks/pubmedqa_n200.csv \
   --n 100 --scoring yesno --max-new-tokens 10 \
-  --out "results_8b_pubmedqa_v2.json" \
+  --out "$CANONICAL_DIR/results_8b_pubmedqa_v2.json" \
   > "logs/8b_pubmedqa_v2_${TS}.log" 2>&1
 log "JOB 4 DONE"
 
@@ -90,7 +91,7 @@ log "JOB 5: MedQA 8B n=100 fixed CURED"
   --benchmark custom \
   --custom-csv benchmarks/medqa_usmle_n200.csv \
   --n 100 --scoring letter --max-new-tokens 40 \
-  --out "results_8b_medqa_v3_fixed.json" \
+  --out "$CANONICAL_DIR/results_8b_medqa_v3_fixed.json" \
   > "logs/8b_medqa_v3_fixed_${TS}.log" 2>&1
 log "JOB 5 DONE"
 
@@ -104,7 +105,7 @@ log "JOB 6: MedHallu 3B built-in n=100"
   --benchmark medhallu \
   --n 100 \
   --scoring cosine --max-new-tokens 80 \
-  --out "results/results_3b_medhallu_n100.json" \
+  --out "$CANONICAL_DIR/results_3b_medhallu_n100.json" \
   > "logs/3b_medhallu_n100_${TS}.log" 2>&1
 log "JOB 6 DONE"
 

@@ -19,6 +19,17 @@ copy_if_exists() {
   fi
 }
 
+move_to_canonical_if_exists() {
+  local src="$1"
+  local dst_name="$2"
+  if [ -f "$src" ]; then
+    mv -f "$src" "$CANONICAL_DIR/$dst_name"
+    echo "[MOVE] $src -> $CANONICAL_DIR/$dst_name"
+  else
+    echo "[SKIP] missing: $src"
+  fi
+}
+
 move_if_exists() {
   local src="$1"
   local dst="$2"
@@ -32,13 +43,14 @@ move_if_exists() {
 }
 
 echo "[INFO] Populating canonical result bundle..."
-copy_if_exists "results/results_3b_truthfulqa_full_mc.json" "$CANONICAL_DIR"
-copy_if_exists "results/results_8b_truthfulqa_full_mc.json" "$CANONICAL_DIR"
-copy_if_exists "results/results_3b_medhallu_n100.json" "$CANONICAL_DIR"
-copy_if_exists "results_8b_medhallu_v2.json" "$CANONICAL_DIR"
-copy_if_exists "results_8b_pubmedqa_v2.json" "$CANONICAL_DIR"
-copy_if_exists "results_8b_medqa_v3_fixed.json" "$CANONICAL_DIR"
-copy_if_exists "results_8b_both.json" "$CANONICAL_DIR"
+move_to_canonical_if_exists "results/results_3b_truthfulqa_full_mc.json" "results_3b_truthfulqa_full_mc.json"
+move_to_canonical_if_exists "results/results_8b_truthfulqa_full_mc.json" "results_8b_truthfulqa_full_mc.json"
+move_to_canonical_if_exists "results/results_3b_medhallu_n100.json" "results_3b_medhallu_n100.json"
+move_to_canonical_if_exists "results_8b_medhallu_v2.json" "results_8b_medhallu_v2.json"
+move_to_canonical_if_exists "results_8b_pubmedqa_v2.json" "results_8b_pubmedqa_v2.json"
+move_to_canonical_if_exists "results_8b_medqa_v2.json" "results_8b_medqa_v2.json"
+move_to_canonical_if_exists "results_8b_medqa_v3_fixed.json" "results_8b_medqa_v3_fixed.json"
+move_to_canonical_if_exists "results_8b_both.json" "results_8b_both.json"
 
 for f in results/results_openrouter_*_v2.json; do
   if [ -f "$f" ]; then
