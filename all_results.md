@@ -1,172 +1,130 @@
-# All Results (Canonical)
+# All Results (Complete)
 
-Last updated: 2026-04-14 08:35 CST
+Last updated: 2026-04-14 13:01:23 (local workspace)
 
-This is the single canonical results document.
+This is the single complete results document for this project.
 
-## ⚠ MC Scoring Status
+## Quick Summary
 
-The following files are **superseded pending v2 reruns** and must not be used
-for protocol comparison in the paper:
+- Remote post-suite pipeline finished successfully.
+- All remote v2 reruns completed and are recorded below.
+- Local workspace currently has 48 JSON result artifacts indexed in this file.
+- Nothing is omitted: this document includes remote-final metrics plus full local inventories.
 
-- `results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json` — all protocols identical (pre-fix)
-- `results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json` — all protocols identical (pre-fix)
+## Final Run Status
 
-**Cause**: `mc_score_sample()` evaluated baseline model log-probs regardless of
-protocol. Fixed in cured.py by `_average_choice_log_prob_alta()` + strategy-faithful
-`mc_protocol` threading. See `patch_cured.py` for full diff.
+- Post-suite queue run: completed successfully on remote server
+- Queue start: 2026-04-14T11:45:51+08:00
+- MC v2 completion: rc8=0, rc3=0
+- both_n100_v2 completion: rc=0
+- Queue end: 2026-04-14T22:02:51+08:00
 
-**Valid for immediate use** (unaffected by MC bug):
-- All cosine-scored results (`results_8b_both.json`, `results_3b_medhallu_n100.json`, etc.)
-- All letter/yesno-scored results (`results_8b_medqa_v3_fixed.json`, `results_8b_pubmedqa_v2.json`)
-- Generation results in `results/archive/comprehensive_results_legacy_origin_alex.md`
+## MC Scoring Status
 
-**Rerun status**: Pending — see QUICKSTART.md for exact commands.
+- Superseded local pre-fix MC file:
+  - results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json
+- Previously expected pre-fix 3B file is not present in this local workspace.
+- Valid v2 MC reruns are completed remotely and summarized below.
 
-It consolidates:
+## Canonical v2 Metrics (Remote Final)
 
-1. Forked Alex legacy results (historical)
-2. Current before-organization results inventory
-3. Current after-organization canonical results inventory and metrics
+Source: remote host /root/llm-hallucination-self-testing/results/CANONICAL_v2
 
-## Live Run Status
+| file | benchmark | protocol | acc | rep | n_scored | runtime_min |
+|---|---|---|---:|---:|---:|---:|
+| results_8b_truthfulqa_full_mc_v2.json | truthfulqa | greedy | 0.4027 | 0.0000 | 817 | 65.08 |
+| results_8b_truthfulqa_full_mc_v2.json | truthfulqa | alta | 0.4027 | 0.0000 | 817 | 65.91 |
+| results_8b_truthfulqa_full_mc_v2.json | truthfulqa | cove | 0.4027 | 0.0012 | 817 | 291.41 |
+| results_8b_truthfulqa_full_mc_v2.json | truthfulqa | cured | 0.4027 | 0.0000 | 817 | 76.49 |
+| results_3b_truthfulqa_full_mc_v2.json | truthfulqa | greedy | 0.3635 | 0.0000 | 817 | 55.40 |
+| results_3b_truthfulqa_full_mc_v2.json | truthfulqa | alta | 0.3635 | 0.0012 | 817 | 59.12 |
+| results_3b_truthfulqa_full_mc_v2.json | truthfulqa | delta_dola | 0.3635 | 0.0012 | 817 | 59.35 |
+| results_3b_truthfulqa_full_mc_v2.json | truthfulqa | cove | 0.3635 | 0.0000 | 817 | 256.54 |
+| results_3b_truthfulqa_full_mc_v2.json | truthfulqa | cured | 0.3635 | 0.0000 | 817 | 64.78 |
+| results_8b_both_n100_v2.json | truthfulqa | greedy | 0.6465 | 0.0100 | 99 | 7.65 |
+| results_8b_both_n100_v2.json | truthfulqa | alta | 0.6162 | 0.0100 | 99 | 8.26 |
+| results_8b_both_n100_v2.json | truthfulqa | cove | 0.6263 | 0.0100 | 99 | 27.94 |
+| results_8b_both_n100_v2.json | truthfulqa | cured | 0.6162 | 0.0100 | 99 | 8.28 |
+| results_8b_both_n100_v2.json | medhallu | greedy | 0.5758 | 0.0100 | 99 | 8.23 |
+| results_8b_both_n100_v2.json | medhallu | alta | 0.5859 | 0.0100 | 99 | 8.61 |
+| results_8b_both_n100_v2.json | medhallu | cove | 0.4949 | 0.0100 | 99 | 29.01 |
+| results_8b_both_n100_v2.json | medhallu | cured | 0.5204 | 0.0200 | 98 | 15.84 |
 
-- Final suite status: running
-- Active stage: Job 8 (TriviaQA, cove)
-- Latest progress: 280/1000
-- ETA from live log: ~144 min
-- Output pending: results/CANONICAL_v2/results_8b_triviaqa_v1.json
+## Sync Gap (Remote -> Local Workspace)
 
-### Runtime tuning currently active
+The following completed canonical files are not yet present in this local workspace:
+- results/CANONICAL_v2/results_8b_truthfulqa_full_mc_v2.json
+- results/CANONICAL_v2/results_3b_truthfulqa_full_mc_v2.json
+- results/CANONICAL_v2/results_8b_both_n100_v2.json
 
-- GPU persistence mode: on
-- App clocks: SM 1410 MHz, MEM 1215 MHz
-- Process priorities: runner NI=-10, suite shell NI=-5
-- Latest GPU snapshot: 67% GPU util, 63% memory util, ~206 W, P0
+## Inventory: Local Canonical Files
 
-## Historical Legacy Results (Forked Alex)
+| path | size_kb | modified | kind | summary |
+|---|---:|---|---|---|
+| results/CANONICAL_v2/results_8b_both.json | 2.3 | 2026-04-11 19:00:04 | eval-dict | benchmark=truthfulqa,medhallu; scoring=-; protocols=alta,cove,cured,greedy |
+| results/CANONICAL_v2/results_8b_medqa_v2.json | 1.4 | 2026-04-12 12:10:45 | eval-dict | benchmark=custom; scoring=letter; protocols=alta,cove,cured,greedy |
+| results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json | 1.5 | 2026-04-13 13:16:13 | eval-dict | benchmark=truthfulqa; scoring=mc; protocols=alta,cove,cured,greedy |
 
-Source: results/archive/comprehensive_results_legacy_origin_alex.md
+## Inventory: Local Active Results (results/*.json)
 
-### Topline summary
+| path | size_kb | modified | kind | summary |
+|---|---:|---|---|---|
+| results/alta_3b_results.json | 0.4 | 2026-04-05 15:24:28 | analysis | top_keys=method,model,n,threshold,accuracy,rep_rate |
+| results/bon_results.json | 0.4 | 2026-03-31 22:46:29 | list | n_items=3 |
+| results/calibration_results.json | 0.7 | 2026-03-31 20:46:10 | analysis | top_keys=meta_llama_Llama_3_1_8B,meta_llama_Llama_3_2_3B,Qwen_Qwen2_5_3B |
+| results/entropy_by_layer.json | 25.2 | 2026-04-05 12:41:29 | analysis | top_keys=n_questions,n_layers,layer_means,layer_stds,layer_mins,layer_maxs |
+| results/generation_results.json | 0.8 | 2026-03-31 05:11:01 | list | n_items=3 |
+| results/generation_results_n100_4configs.json | 1.1 | 2026-04-02 20:00:53 | list | n_items=4 |
+| results/grid_search_results.json | 6.6 | 2026-03-29 14:45:20 | analysis | top_keys=baseline_accuracy,phase1,phase2 |
+| results/instruct_results.json | 0.5 | 2026-04-03 16:15:10 | list | n_items=3 |
+| results/iti_results.json | 0.7 | 2026-04-02 21:00:41 | list | n_items=6 |
+| results/logit_linearity_3b.json | 6.3 | 2026-04-05 14:28:50 | analysis | top_keys=model,n_questions,mid_layer,top_k,mean_r2,median_r2 |
+| results/medhallu_ablation_results.json | 1.3 | 2026-04-05 03:51:32 | eval-list | benchmark=-; scoring=-; labels=bon3_t0.3,iti_alpha0.5,sled |
+| results/medhallu_generation_results.json | 2.5 | 2026-04-04 23:47:09 | eval-list | benchmark=UTAustin-AIHealth/MedHallu pqa_artificial train; scoring=cosine_similarity_to_ground_truth; labels=cove,cove_rag,delta_dola,gadr2_cured,greedy |
+| results/medhallu_results.json | 1.4 | 2026-04-04 19:37:41 | eval-list | benchmark={'id': 'UTAustin-AIHealth/MedHallu', 'subset': 'pqa_artificial', 'split': 'train'}; scoring=-; labels=delta_dola_mc_a10.3_a20.3,greedy_mc |
+| results/online_results.json | 1.2 | 2026-04-02 14:14:21 | list | n_items=4 |
+| results/results_cloudflare_medhallu_v2.json | 1.2 | 2026-04-11 20:20:02 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=cosine; protocols=custom |
+| results/results_cloudflare_medqa_fixed.json | 1.1 | 2026-04-11 12:17:21 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/results_cloudflare_medqa_v2.json | 1.2 | 2026-04-11 19:45:45 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/results_cloudflare_pubmedqa_v2.json | 1.2 | 2026-04-11 19:58:18 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=yesno; protocols=custom |
+| results/results_openrouter_both.json | 1.9 | 2026-04-10 16:06:54 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/results_openrouter_medhallu_v2.json | 1.2 | 2026-04-11 20:20:02 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=cosine; protocols=custom |
+| results/results_openrouter_medqa_v2.json | 1.2 | 2026-04-11 19:45:45 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/results_openrouter_pubmedqa_v2.json | 1.2 | 2026-04-11 19:58:18 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=yesno; protocols=custom |
+| results/selfcheck_results.json | 0.4 | 2026-04-02 21:24:44 | analysis | top_keys=dataset,n,k_samples,selfcheck_similarity_threshold,reference_threshold,qa_accuracy |
+| results/truthfulqa_delta_dola_sweep.json | 3.6 | 2026-04-05 03:15:31 | eval-list | benchmark=-; scoring=-; n_rows=25 |
 
-- Entropy profile: H1=0.0806 -> H7=10.8342 -> H28=0.8516
-- L1->L28 mean dH=+0.7711 (dH<0=16.7%)
-- L7->L28 mean dH=-9.9826 (dH<0=100%)
-- 3B late-layer linearity mean R2=0.5557
-- ALTA-style 3B (n=50): 72% acc, 0% rep
-- TruthfulQA DeLTa+DoLa sweep max acc=74%
-- MedHallu generation best: gadr2_cured 54% (greedy 50%)
+## Inventory: Local Archive Results (results/archive/**/*.json)
 
-### Legacy medhallu generation (n=50)
+Total archived JSON files: 21
 
-| method | acc | rep |
-|---|---:|---:|
-| greedy | 50% | 0% |
-| cove | 50% | 2% |
-| cove_rag | 50% | 0% |
-| delta_dola | 52% | 0% |
-| gadr2_cured | 54% | 2% |
+| path | size_kb | modified | kind | summary |
+|---|---:|---|---|---|
+| results/archive/20260411_cleanup/smoke_cf_account_a0a25954e31bac6ca5ccad3ad5d1b529_20260411_212737.json | 0.6 | 2026-04-11 21:27:50 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/archive/20260411_cleanup/smoke_cloudflare_20260411_192811_k1.json | 0.6 | 2026-04-11 19:28:24 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/archive/20260411_cleanup/smoke_cloudflare_20260411_192811_k2.json | 0.6 | 2026-04-11 19:28:46 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/archive/20260411_cleanup/smoke_openrouter_20260411_192811.json | 0.6 | 2026-04-11 19:29:01 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=letter; protocols=custom |
+| results/archive/debug_20260410/results_cloudflare_both_n3.json | 1.9 | 2026-04-09 19:25:38 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/archive/debug_20260410/results_cloudflare_both_n3_fix.json | 1.8 | 2026-04-10 01:42:37 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/archive/debug_20260410/results_cloudflare_pubmedqa_fix_n5.json | 1.1 | 2026-04-10 01:41:20 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/debug_20260410/results_cloudflare_pubmedqa_smoke.json | 1.1 | 2026-04-09 23:37:38 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/debug_20260410/results_openrouter_both_n1_smoke.json | 1.8 | 2026-04-10 03:17:01 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/archive/debug_20260410/results_openrouter_medqa_n20.json | 1.1 | 2026-04-10 02:10:55 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/debug_20260410/results_openrouter_pubmedqa_n20.json | 1.1 | 2026-04-10 02:14:48 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/invalid_openrouter_401_20260410/results_openrouter_both.json | 1.8 | 2026-04-10 13:02:08 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/archive/invalid_openrouter_401_20260410/results_openrouter_medqa.json | 1.1 | 2026-04-10 12:59:28 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/invalid_openrouter_401_20260410/results_openrouter_pubmedqa.json | 1.1 | 2026-04-10 13:00:42 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/medhallu_detector_legacy_results.json | 2.3 | 2026-04-04 04:59:26 | eval-list | benchmark={'id': 'UTAustin-AIHealth/MedHallu', 'subset': 'pqa_artificial', 'split': 'train'}; scoring=-; labels=cove,cove_rag,gadr2,greedy |
+| results/archive/medhallu_results_snapshot_n50.json | 1.4 | 2026-04-04 19:33:23 | eval-list | benchmark={'id': 'UTAustin-AIHealth/MedHallu', 'subset': 'pqa_artificial', 'split': 'train'}; scoring=-; labels=delta_dola_mc_a10.3_a20.3,greedy_mc |
+| results/archive/provider_debug_20260410/results_cloudflare_both.json | 2.1 | 2026-04-09 19:11:03 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=medhallu,truthfulqa |
+| results/archive/provider_debug_20260410/results_cloudflare_medqa.json | 1.2 | 2026-04-09 22:47:09 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/provider_debug_20260410/results_cloudflare_pubmedqa.json | 1.1 | 2026-04-10 00:15:35 | eval-dict | benchmark=@cf/meta/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/results_openrouter_medqa.json | 1.1 | 2026-04-10 16:34:56 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
+| results/archive/results_openrouter_pubmedqa.json | 1.1 | 2026-04-10 16:52:29 | eval-dict | benchmark=meta-llama/llama-3.1-8b-instruct; scoring=-; protocols=custom |
 
-### Legacy ablations (n=50)
+## Totals
 
-| method | acc | rep |
-|---|---:|---:|
-| iti_alpha0.5 | 52% | 4% |
-| sled | 52% | 0% |
-| bon3_t0.3 | 48% | 0% |
-
-## Before Organization Data
-
-Files in results/*.json:
-
-- results/alta_3b_results.json
-- results/bon_results.json
-- results/calibration_results.json
-- results/entropy_by_layer.json
-- results/generation_results.json
-- results/generation_results_n100_4configs.json
-- results/grid_search_results.json
-- results/instruct_results.json
-- results/iti_results.json
-- results/logit_linearity_3b.json
-- results/medhallu_ablation_results.json
-- results/medhallu_generation_results.json
-- results/medhallu_results.json
-- results/online_results.json
-- results/results_cloudflare_medhallu_v2.json
-- results/results_cloudflare_medqa_fixed.json
-- results/results_cloudflare_medqa_v2.json
-- results/results_cloudflare_pubmedqa_v2.json
-- results/results_openrouter_both.json
-- results/results_openrouter_medhallu_v2.json
-- results/results_openrouter_medqa_v2.json
-- results/results_openrouter_pubmedqa_v2.json
-- results/selfcheck_results.json
-- results/truthfulqa_delta_dola_sweep.json
-
-## After Organization Data
-
-Files in results/CANONICAL_v2:
-
-- results/CANONICAL_v2/results_3b_medhallu_n100.json
-- results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json
-- results/CANONICAL_v2/results_8b_both.json
-- results/CANONICAL_v2/results_8b_medhallu_v2.json
-- results/CANONICAL_v2/results_8b_medqa_v2.json
-- results/CANONICAL_v2/results_8b_medqa_v3_fixed.json
-- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
-- results/CANONICAL_v2/results_8b_strategyqa_v1.json
-- results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json
-- pending write: results/CANONICAL_v2/results_8b_triviaqa_v1.json
-
-### After-organization metrics snapshot
-
-| file | benchmark | scoring | protocol | acc | rep | runtime_min | n_scored |
-|---|---|---|---|---:|---:|---:|---:|
-| results_3b_medhallu_n100.json | medhallu | cosine | greedy | 0.5500 | 0.0000 | 6.32 | 100 |
-| results_3b_medhallu_n100.json | medhallu | cosine | cove | 0.5600 | 0.0000 | 22.17 | 100 |
-| results_3b_medhallu_n100.json | medhallu | cosine | cured | 0.5800 | 0.0000 | 12.04 | 100 |
-| results_3b_truthfulqa_full_mc.json | truthfulqa | mc | greedy | 0.3684 | 0.0000 | 35.23 | 817 |
-| results_3b_truthfulqa_full_mc.json | truthfulqa | mc | alta | 0.3684 | 0.0012 | 37.27 | 817 |
-| results_3b_truthfulqa_full_mc.json | truthfulqa | mc | delta_dola | 0.3684 | 0.0012 | 37.58 | 817 |
-| results_3b_truthfulqa_full_mc.json | truthfulqa | mc | cove | 0.3635 | 0.0000 | 155.30 | 817 |
-| results_3b_truthfulqa_full_mc.json | truthfulqa | mc | cured | 0.3635 | 0.0000 | 41.67 | 817 |
-| results_8b_both.json | truthfulqa |  | greedy | 0.7755 | 0.0200 | 62.97 | 49 |
-| results_8b_both.json | truthfulqa |  | alta | 0.7959 | 0.0200 | 62.10 | 49 |
-| results_8b_both.json | truthfulqa |  | cove | 0.7800 | 0.0000 | 257.26 | 50 |
-| results_8b_both.json | truthfulqa |  | cured | 0.7755 | 0.0200 | 64.45 | 49 |
-| results_8b_both.json | medhallu |  | greedy | 0.5306 | 0.0200 | 67.28 | 49 |
-| results_8b_both.json | medhallu |  | alta | 0.4694 | 0.0200 | 67.43 | 49 |
-| results_8b_both.json | medhallu |  | cove | 0.5400 | 0.0000 | 271.77 | 50 |
-| results_8b_both.json | medhallu |  | cured | 0.5510 | 0.0200 | 167.31 | 49 |
-| results_8b_medhallu_v2.json | custom | cosine | greedy | 0.5600 | 0.0000 | 6.08 | 100 |
-| results_8b_medhallu_v2.json | custom | cosine | alta | 0.5400 | 0.0000 | 6.67 | 100 |
-| results_8b_medhallu_v2.json | custom | cosine | cove | 0.5354 | 0.0100 | 27.21 | 99 |
-| results_8b_medhallu_v2.json | custom | cosine | cured | 0.5300 | 0.0000 | 17.85 | 100 |
-| results_8b_medqa_v2.json | custom | letter | greedy | 0.2900 | 0.0000 | 42.53 | 100 |
-| results_8b_medqa_v2.json | custom | letter | alta | 0.2800 | 0.0000 | 45.87 | 100 |
-| results_8b_medqa_v2.json | custom | letter | cove | 0.1300 | 0.0000 | 393.13 | 100 |
-| results_8b_medqa_v2.json | custom | letter | cured | 0.1400 | 0.0000 | 468.18 | 100 |
-| results_8b_medqa_v3_fixed.json | custom | letter | greedy | 0.5500 | 0.0000 | 2.54 | 100 |
-| results_8b_medqa_v3_fixed.json | custom | letter | alta | 0.5700 | 0.0000 | 3.12 | 100 |
-| results_8b_medqa_v3_fixed.json | custom | letter | cove | 0.3500 | 0.0000 | 20.68 | 100 |
-| results_8b_medqa_v3_fixed.json | custom | letter | cured | 0.5700 | 0.0000 | 3.14 | 100 |
-| results_8b_pubmedqa_v2.json | custom | yesno | greedy | 0.5500 | 0.0000 | 0.3400 | 100 |
-| results_8b_pubmedqa_v2.json | custom | yesno | alta | 0.5300 | 0.0000 | 0.3300 | 100 |
-| results_8b_pubmedqa_v2.json | custom | yesno | cove | 0.5700 | 0.0000 | 14.55 | 100 |
-| results_8b_pubmedqa_v2.json | custom | yesno | cured | 0.5300 | 0.0000 | 0.3200 | 100 |
-| results_8b_strategyqa_v1.json | custom | yesno | greedy | 0.7220 | 0.0000 | 1.54 | 500 |
-| results_8b_strategyqa_v1.json | custom | yesno | alta | 0.7240 | 0.0000 | 1.58 | 500 |
-| results_8b_strategyqa_v1.json | custom | yesno | cove | 0.6260 | 0.0000 | 66.92 | 500 |
-| results_8b_strategyqa_v1.json | custom | yesno | cured | 0.7240 | 0.0000 | 1.58 | 500 |
-| results_8b_truthfulqa_full_mc.json | truthfulqa | mc | greedy | 0.4027 | 0.0000 | 47.73 | 817 |
-| results_8b_truthfulqa_full_mc.json | truthfulqa | mc | alta | 0.4027 | 0.0000 | 49.83 | 817 |
-| results_8b_truthfulqa_full_mc.json | truthfulqa | mc | cove | 0.4027 | 0.0012 | 212.01 | 817 |
-| results_8b_truthfulqa_full_mc.json | truthfulqa | mc | cured | 0.4027 | 0.0000 | 57.37 | 817 |
-
-## Provenance
-
-- historical legacy source: results/archive/comprehensive_results_legacy_origin_alex.md
-- compatibility source: raw_results.md
-- compatibility source: comprehensive_results.md
+- Total JSON result artifacts in workspace: 48
+- Active (non-archive, non-canonical_v2): 24
+- Canonical_v2 present locally: 3
+- Archived JSON artifacts: 21
