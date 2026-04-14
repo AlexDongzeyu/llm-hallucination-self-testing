@@ -3,6 +3,26 @@
 Last updated: 2026-04-14 08:35 CST
 
 This is the single canonical results document.
+
+## ⚠ MC Scoring Status
+
+The following files are **superseded pending v2 reruns** and must not be used
+for protocol comparison in the paper:
+
+- `results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json` — all protocols identical (pre-fix)
+- `results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json` — all protocols identical (pre-fix)
+
+**Cause**: `mc_score_sample()` evaluated baseline model log-probs regardless of
+protocol. Fixed in cured.py by `_average_choice_log_prob_alta()` + strategy-faithful
+`mc_protocol` threading. See `patch_cured.py` for full diff.
+
+**Valid for immediate use** (unaffected by MC bug):
+- All cosine-scored results (`results_8b_both.json`, `results_3b_medhallu_n100.json`, etc.)
+- All letter/yesno-scored results (`results_8b_medqa_v3_fixed.json`, `results_8b_pubmedqa_v2.json`)
+- Generation results in `results/archive/comprehensive_results_legacy_origin_alex.md`
+
+**Rerun status**: Pending — see QUICKSTART.md for exact commands.
+
 It consolidates:
 
 1. Forked Alex legacy results (historical)

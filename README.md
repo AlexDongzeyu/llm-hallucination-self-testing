@@ -58,3 +58,14 @@ This writes results/results_openrouter_medqa_v2.json.
 - Legacy or invalid artifacts should be moved to results/archive.
 - Top-level result JSON files are considered legacy and should be normalized via scripts/autodl/organize_final_results.sh.
 - For current status narrative, use all_results.md.
+
+## ⚠ MC Scoring Validity Note
+
+Results in `results/CANONICAL_v2/results_*_truthfulqa_full_mc.json` (pre-v2 suffix)
+were produced before the protocol-aware MC scoring fix and **must not be cited**
+for protocol comparison. All protocols scored identically because `mc_score_sample()`
+evaluated raw model log-probs independent of the generation strategy.
+
+Use only files with the `_v2` suffix for TruthfulQA MC comparisons.
+Generation-scored results (`results_8b_both.json`, `results_3b_*`) are unaffected
+and remain valid.

@@ -68,3 +68,62 @@ bash scripts/autodl/organize_final_results.sh
 
 This moves legacy root-level outputs into results/CANONICAL_v2 and archives
 legacy API v1 outputs under results/archive.
+
+## Protocol-Aware MC Rerun (Required for Paper)
+
+After merging the cured.py patch (`python patch_cured.py cured.py`):
+
+### Run 8B and 3B MC reruns in parallel (A100 40GB — both fit)
+
+```bash
+# Window 1 — 8B TruthfulQA MC v2
+# No --load-in-4bit: A100 has 40GB, bfloat16 gives cleaner results
+python -u cured.py \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --protocols greedy,alta,cove,cured \
+  --skip-iti \
+  --benchmark truthfulqa \
+  --n 817 --scoring mc --max-new-tokens 50 \
+  --force-recalibrate \
+  --out results/CANONICAL_v2/results_8b_truthfulqa_full_mc_v2.json \
+  > logs/8b_tqa_mc_v2.log 2>&1 &
+
+# Window 2 — 3B TruthfulQA MC v2 (run simultaneously)
+python -u cured.py \
+  --model meta-llama/Llama-3.2-3B-Instruct \
+  --protocols greedy,alta,delta_dola,cove,cured \
+  --skip-iti \
+  --benchmark truthfulqa \
+  --n 817 --scoring mc --max-new-tokens 50 \
+  --force-recalibrate \
+  --out results/CANONICAL_v2/results_3b_truthfulqa_full_mc_v2.json \
+  > logs/3b_tqa_mc_v2.log 2>&1 &
+```
+
+### After MC v2 completes — generation eval with larger n
+
+```bash
+# 8B both benchmarks, cosine, n=100, no quantization
+python -u cured.py \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --protocols greedy,alta,cove,cured \
+  --skip-iti \
+  --benchmark both \
+  --n 100 --scoring cosine --max-new-tokens 80 \
+  --force-recalibrate \
+  --out results/CANONICAL_v2/results_8b_both_n100.json \
+  > logs/8b_both_n100.log 2>&1
+```
+
+### Archive old (pre-fix) MC files only after v2 validation
+
+```bash
+mv results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json results/archive/
+mv results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json results/archive/
+```
+
+### --force-recalibrate is required
+
+The cached `calibration.json` has `alta_viable: false` because it was generated
+when `ALTA_R2_CUTOFF=0.65`. With the patch setting it to `0.50`, and R²=0.5557,
+ALTA becomes viable — but only after a forced recalibrate overwrites the cache.

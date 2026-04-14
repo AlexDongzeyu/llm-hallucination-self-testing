@@ -55,7 +55,7 @@ DEFAULT_CACHE_ROOT = Path.home() / ".cured_cache"
 DEFAULT_COSINE_THRESHOLD = 0.65
 
 # ALTA defaults (from local experiments)
-ALTA_R2_CUTOFF = 0.55
+ALTA_R2_CUTOFF = 0.50
 ALTA_EARLY_IDX = 7
 ALTA_MID_IDX = 14
 ALTA_TOP_K = 200
@@ -319,6 +319,87 @@ def _to_binary_labels(labels: list[Any]) -> np.ndarray:
     return np.asarray(out, dtype=np.float32)
 
 
+
+
+def _average_choice_log_prob_alta(
+    model: Any,
+    tokenizer: Any,
+    question: str,
+    choice: str,
+    early_idx: int = ALTA_EARLY_IDX,
+    mid_idx: int = ALTA_MID_IDX,
+    top_k: int = ALTA_TOP_K,
+    alpha_c: float = ALTA_ALPHA_C,
+    alpha_e: float = ALTA_ALPHA_E,
+) -> float:
+    """Like _average_choice_log_prob but applies ALTA logit correction at each answer token."""
+    dev = get_model_device(model)
+    prompt_text = format_prompt(tokenizer, question)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": question},
+        {"role": "assistant", "content": str(choice)},
+    ]
+    try:
+        full_text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    except Exception:
+        full_text = f"Question: {question}\nAnswer: {choice}"
+    try:
+        prompt_ids = tokenizer.encode(prompt_text, add_special_tokens=False)
+        full_ids = tokenizer.encode(full_text, add_special_tokens=False)
+    except Exception:
+        prompt_ids = tokenizer.encode(prompt_text)
+        full_ids = tokenizer.encode(full_text)
+
+    if len(full_ids) <= len(prompt_ids):
+        try:
+            answer_ids = tokenizer.encode(" " + str(choice).strip(), add_special_tokens=False)
+        except Exception:
+            answer_ids = tokenizer.encode(" " + str(choice).strip())
+        full_ids = list(prompt_ids) + list(answer_ids)
+
+    prompt_len = len(prompt_ids)
+    if prompt_len <= 0 or len(full_ids) <= prompt_len:
+        return -999.0
+
+    input_ids = torch.tensor([full_ids], device=dev)
+    with torch.no_grad():
+        out = model(input_ids=input_ids, output_hidden_states=True, use_cache=False)
+
+    hidden_states = getattr(out, "hidden_states", None)
+    if hidden_states is None or len(hidden_states) < 2:
+        # Fallback: no hidden states available, use baseline scorer
+        return _average_choice_log_prob(model, tokenizer, question, choice)
+
+    hidden_states = hidden_states[1:]  # skip embedding layer
+    norm, lm_head = get_final_norm_and_lm_head(model)
+
+    total_lp = 0.0
+    n_tokens = 0
+    for offset in range(prompt_len, len(full_ids) - 1):
+        layer_logits_list = []
+        for h in hidden_states:
+            hs = h[:, offset, :]
+            logits = lm_head(norm(hs)).squeeze(0).detach().to(torch.float32).cpu().numpy()
+            layer_logits_list.append(logits)
+        layer_logits_np = np.asarray(layer_logits_list, dtype=np.float32)
+
+        corrected, _, _ = alta_logits(
+            layer_logits_np,
+            early_idx=early_idx,
+            mid_idx=mid_idx,
+            top_k=top_k,
+            alpha_contrast=alpha_c,
+            alpha_extrap=alpha_e,
+        )
+        shifted = corrected - np.max(corrected)
+        log_probs = shifted - np.log(np.sum(np.exp(shifted)))
+        tok_id = int(full_ids[offset + 1])
+        total_lp += float(log_probs[tok_id])
+        n_tokens += 1
+
+    return total_lp / max(n_tokens, 1)
+
 def _average_choice_log_prob(model: Any, tokenizer: Any, question: str, choice: str) -> float:
     dev = get_model_device(model)
     prompt_text = format_prompt(tokenizer, question)
@@ -381,6 +462,7 @@ def mc_score_sample(
     labels: list[int],
     choices_mc2: list[str] | None = None,
     labels_mc2: list[int] | None = None,
+    mc_protocol: str = "greedy",
 ) -> dict[str, float]:
     """
     TruthfulQA MC1/MC2 scoring using candidate log-likelihoods.
@@ -391,8 +473,9 @@ def mc_score_sample(
     if not choices or not labels:
         return {"mc1": 0.0, "mc2": 0.0}
 
+    _mc_score_fn = _average_choice_log_prob_alta if mc_protocol == "alta" else _average_choice_log_prob
     mc1_log_probs = np.asarray(
-        [_average_choice_log_prob(model, tokenizer, question, c) for c in choices],
+        [_mc_score_fn(model, tokenizer, question, c) for c in choices],
         dtype=np.float32,
     )
     mc1_labels = _to_binary_labels(labels)
@@ -411,7 +494,7 @@ def mc_score_sample(
     use_mc2_choices = choices_mc2 if choices_mc2 else choices
     use_mc2_labels = labels_mc2 if labels_mc2 else labels
     mc2_log_probs = np.asarray(
-        [_average_choice_log_prob(model, tokenizer, question, c) for c in use_mc2_choices],
+        [_mc_score_fn(model, tokenizer, question, c) for c in use_mc2_choices],
         dtype=np.float32,
     )
     mc2_labels = _to_binary_labels(use_mc2_labels)
@@ -2440,6 +2523,17 @@ def run_protocol(
             mc2_choices = sample.get("mc2_choices")
             mc2_labels = sample.get("mc2_labels")
             if isinstance(mc1_choices, list) and isinstance(mc1_labels, list) and mc1_choices and mc1_labels:
+                # Strategy-faithful MC protocol selection:
+                # - 'alta' protocol always uses ALTA-aware scoring
+                # - 'cured' uses ALTA-aware scoring only when router chose an ALTA strategy
+                # - all others use baseline scoring
+                _mc_proto = "greedy"
+                if protocol == "alta":
+                    _mc_proto = "alta"
+                elif protocol == "cured" and router.alta_viable:
+                    _alta_strategies = {"alta_general", "alta_medical_structured", "alta_general_structured"}
+                    if strategy in _alta_strategies:
+                        _mc_proto = "alta"
                 mc_scores = mc_score_sample(
                     model=model,
                     tokenizer=tokenizer,
@@ -2448,6 +2542,7 @@ def run_protocol(
                     labels=list(mc1_labels),
                     choices_mc2=[str(c) for c in mc2_choices] if isinstance(mc2_choices, list) else None,
                     labels_mc2=list(mc2_labels) if isinstance(mc2_labels, list) else None,
+                    mc_protocol=_mc_proto,
                 )
                 scored += 1
                 mc_scored += 1
