@@ -10,7 +10,7 @@ Historical artifacts only. Do not use this folder as the current source of truth
 Canonical files:
 - `results/medhallu_results.json` (MC ablation)
 - `results/medhallu_generation_results.json` (primary generation metric)
-- `comprehensive_results.md` (current summary status)
+- `all_results.md` (current consolidated summary)
 
 Additional policy:
 - Legacy API v1 outputs (for example results_openrouter_medqa.json without v2 tag)

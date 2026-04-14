@@ -9,11 +9,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from datetime import datetime
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 MED_PATH = ROOT / "results" / "medhallu_results.json"
 README_PATH = ROOT / "README.md"
-COMPREHENSIVE_PATH = ROOT / "comprehensive_results.md"
+ALL_RESULTS_PATH = ROOT / "all_results.md"
 SUMMARY_OUT = ROOT / "results" / "medhallu_latest_summary.md"
 
 
@@ -49,28 +50,34 @@ def build_summary_markdown(payload: dict, by_label: dict[str, dict]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def maybe_update_comprehensive_timestamp() -> bool:
-    if not COMPREHENSIVE_PATH.exists():
+def maybe_update_all_results_timestamp() -> bool:
+    if not ALL_RESULTS_PATH.exists():
         return False
 
-    text = COMPREHENSIVE_PATH.read_text(encoding="utf-8")
+    text = ALL_RESULTS_PATH.read_text(encoding="utf-8")
     today = datetime.now().strftime("%Y-%m-%d")
-    markers = ["Last update:", "Last sync:"]
+    markers = ["Last updated:", "Last update:", "Last sync:"]
     marker = next((m for m in markers if m in text), None)
     if marker is None:
         return False
 
     updated = []
     changed = False
+    date_pat = re.compile(r"^(?P<prefix>" + re.escape(marker) + r"\s+)\d{4}-\d{2}-\d{2}(?P<suffix>.*)$")
     for line in text.splitlines():
         if line.startswith(marker):
-            updated.append(f"{marker} {today}")
-            changed = True
+            m = date_pat.match(line)
+            if m:
+                new_line = f"{m.group('prefix')}{today}{m.group('suffix')}"
+            else:
+                new_line = f"{marker} {today}"
+            updated.append(new_line)
+            changed = changed or (new_line != line)
         else:
             updated.append(line)
 
     if changed:
-        COMPREHENSIVE_PATH.write_text("\n".join(updated) + "\n", encoding="utf-8")
+        ALL_RESULTS_PATH.write_text("\n".join(updated) + "\n", encoding="utf-8")
     return changed
 
 
@@ -80,13 +87,13 @@ def main() -> None:
     SUMMARY_OUT.write_text(summary_md, encoding="utf-8")
 
     touched = [str(SUMMARY_OUT.relative_to(ROOT))]
-    if maybe_update_comprehensive_timestamp():
-        touched.append(str(COMPREHENSIVE_PATH.relative_to(ROOT)))
+    if maybe_update_all_results_timestamp():
+        touched.append(str(ALL_RESULTS_PATH.relative_to(ROOT)))
 
     if README_PATH.exists():
         # Keep README update behavior lightweight and non-destructive.
         readme = README_PATH.read_text(encoding="utf-8")
-        needle = "- For current status narrative, use comprehensive_results.md."
+        needle = "- For current status narrative, use all_results.md."
         extra = "- Generated MedHallu quick summary: results/medhallu_latest_summary.md"
         if needle in readme and extra not in readme:
             README_PATH.write_text(readme.replace(needle, needle + "\n" + extra), encoding="utf-8")

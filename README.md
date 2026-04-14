@@ -57,4 +57,4 @@ This writes results/results_openrouter_medqa_v2.json.
 
 - Legacy or invalid artifacts should be moved to results/archive.
 - Top-level result JSON files are considered legacy and should be normalized via scripts/autodl/organize_final_results.sh.
-- For current status narrative, use comprehensive_results.md.
+- For current status narrative, use all_results.md.
