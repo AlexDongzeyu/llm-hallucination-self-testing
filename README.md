@@ -38,6 +38,28 @@ Minimal flow:
 2) bash scripts/autodl/run_final_suite.sh
 3) bash scripts/autodl/organize_final_results.sh
 
+## Unattended Auto Queue (Safe To Leave VS Code)
+
+Use this when you want post-final-suite jobs to run automatically even after you disconnect:
+
+1) Start the main suite:
+
+	bash scripts/autodl/run_final_suite.sh
+
+2) Start the queued follow-up runner in detached mode:
+
+	nohup bash scripts/autodl/queue_after_triviaqa_v2.sh >/tmp/queue_after_triviaqa_v2_boot.out 2>&1 < /dev/null &
+
+What this queue runs automatically after the suite exits:
+
+- 8B TruthfulQA MC v2 rerun
+- 3B TruthfulQA MC v2 rerun (parallel with 8B)
+- 8B both n=100 v2 (after both MC jobs succeed)
+
+Live queue log location:
+
+- logs/queue_after_triviaqa_v2_*.log
+
 ## API Rerun Helper (Windows)
 
 For the fixed MedQA API rerun:
