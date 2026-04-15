@@ -1,23 +1,38 @@
 # All Results (Complete)
 
-Last updated: 2026-04-14 13:01:23 (local workspace)
+Last updated: 2026-04-15 09:52:00 (local workspace)
 
 This is the single complete results document for this project.
 
 ## Quick Summary
 
-- Remote post-suite pipeline finished successfully.
-- All remote v2 reruns completed and are recorded below.
+- Remote queue is currently running (watchdog alive) and has not fully finished yet.
+- SSH-confirmed completed canonical files are updated below.
+- Newly completed remote canonical jobs not previously documented are now listed.
 - Local workspace currently has 48 JSON result artifacts indexed in this file.
 - Nothing is omitted: this document includes remote-final metrics plus full local inventories.
 
 ## Final Run Status
 
-- Post-suite queue run: completed successfully on remote server
-- Queue start: 2026-04-14T11:45:51+08:00
-- MC v2 completion: rc8=0, rc3=0
-- both_n100_v2 completion: rc=0
-- Queue end: 2026-04-14T22:02:51+08:00
+- Post-suite queue run: in progress on remote server
+- Queue start: 2026-04-15T09:13:31+08:00
+- Priority1 (3B both n=100): already complete (skip detected)
+- Priority2 (factor benchmark): skipped (not supported in cured.py)
+- Current step: calibrate qwen14b
+- qwen14b result file: not present yet
+- qwen32b result file: not present yet
+
+## SSH Confirmed Completed But Not Previously Documented
+
+Source: live SSH check on 2026-04-15 09:49:38 CST
+
+- results/CANONICAL_v2/results_3b_both_n100_v2.json
+- results/CANONICAL_v2/results_3b_medhallu_n100.json
+- results/CANONICAL_v2/results_8b_medhallu_v2.json
+- results/CANONICAL_v2/results_8b_medqa_v3_fixed.json
+- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
+- results/CANONICAL_v2/results_8b_strategyqa_v1.json
+- results/CANONICAL_v2/results_8b_triviaqa_v1.json
 
 ## MC Scoring Status
 
@@ -53,9 +68,16 @@ Source: remote host /root/llm-hallucination-self-testing/results/CANONICAL_v2
 ## Sync Gap (Remote -> Local Workspace)
 
 The following completed canonical files are not yet present in this local workspace:
-- results/CANONICAL_v2/results_8b_truthfulqa_full_mc_v2.json
+- results/CANONICAL_v2/results_3b_both_n100_v2.json
+- results/CANONICAL_v2/results_3b_medhallu_n100.json
 - results/CANONICAL_v2/results_3b_truthfulqa_full_mc_v2.json
 - results/CANONICAL_v2/results_8b_both_n100_v2.json
+- results/CANONICAL_v2/results_8b_medhallu_v2.json
+- results/CANONICAL_v2/results_8b_medqa_v3_fixed.json
+- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
+- results/CANONICAL_v2/results_8b_strategyqa_v1.json
+- results/CANONICAL_v2/results_8b_triviaqa_v1.json
+- results/CANONICAL_v2/results_8b_truthfulqa_full_mc_v2.json
 
 ## Inventory: Local Canonical Files
 
