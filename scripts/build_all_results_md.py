@@ -164,6 +164,116 @@ def _extract_profile_row(payload: dict[str, Any], file_rel: str) -> list[str] | 
     ]
 
 
+def _extract_experimental_rows(payload: Any, file_rel: str) -> list[list[str]]:
+    """Extract one or more rows that summarize a result JSON in a common table schema."""
+    rows: list[list[str]] = []
+    if payload is None:
+        return [["—", "invalid-json", "—", "—", "—", "—", "—", "—", "—", "—", "—", "Unable to parse JSON"]]
+
+    kind = _kind(payload)
+    if not isinstance(payload, dict):
+        if kind == "list":
+            return [[
+                file_rel,
+                kind,
+                "—",
+                "—",
+                "—",
+                "—",
+                str(len(payload)),
+                "—",
+                "—",
+                "—",
+                "—",
+                "List-only JSON payload",
+            ]]
+        return [[
+            file_rel,
+            kind,
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            "—",
+            f"Unhandled JSON kind: {kind}",
+        ]]
+
+    # Reuse canonical parser for full eval-dict style files.
+    eval_rows = _extract_eval_rows(payload, file_rel)
+    if eval_rows:
+        for row in eval_rows:
+            rows.append([
+                row[0],  # file
+                "eval-dict",
+                row[1],  # model
+                row[2],  # benchmark
+                row[3],  # protocol
+                row[4],  # scoring
+                row[5],  # n
+                row[6],  # acc
+                row[7],  # rep
+                row[8],  # n_scored
+                row[9],  # runtime
+                "Parsed from results dictionary",
+            ])
+        return rows
+
+    # Profile-style outputs
+    if "mean_r2" in payload or "mean_kappa" in payload or "mean_ecr" in payload:
+        rows.append([
+            file_rel,
+            "profile",
+            str(payload.get("model", "")),
+            "profile",
+            "profile",
+            "—",
+            _fmt_num(payload.get("n_questions", "")),
+            "—",
+            _fmt_num(payload.get("n_questions", "")),
+            _fmt_num(payload.get("runtime_min", "")),
+            (
+                f"mean_r2={_fmt_num(payload.get('mean_r2'))}; "
+                f"mean_kappa={_fmt_num(payload.get('mean_kappa'))}; "
+                f"mean_ecr={_fmt_num(payload.get('mean_ecr'))}; "
+                f"mean_h_final={_fmt_num(payload.get('mean_h_final'))}; "
+                f"mean_h_peak={_fmt_num(payload.get('mean_h_peak'))}"
+            ),
+        ])
+        return rows
+
+    # Generic score-bearing JSON
+    model = str(payload.get("model", payload.get("api_model", payload.get("api_mode", "")) or ""))
+    bench = str(payload.get("benchmark", payload.get("bench", "")) or "—")
+    proto = str(payload.get("protocol", payload.get("method", "")) or "—")
+    scoring = str(payload.get("scoring", payload.get("scoring_mode", "")) or "—")
+    n_value = payload.get("n_target", payload.get("n", payload.get("n_total", payload.get("n_scored", ""))))
+    acc = payload.get("accuracy", payload.get("acc", None))
+    rep = payload.get("rep_rate", payload.get("rep", None))
+    n_scored = payload.get("n_scored")
+    runtime = payload.get("runtime_min")
+
+    rows.append([
+        file_rel,
+        kind,
+        model if model else "—",
+        bench,
+        proto,
+        scoring,
+        str(n_value) if n_value != "" else "—",
+        _fmt_pct(acc) if isinstance(acc, (int, float)) or isinstance(acc, str) else "—",
+        _fmt_pct(rep) if isinstance(rep, (int, float)) or isinstance(rep, str) else "—",
+        _fmt_num(n_scored),
+        _fmt_num(runtime),
+        "Generic JSON result container",
+    ])
+    return rows
+
+
 def _kind(payload: Any) -> str:
     if isinstance(payload, dict) and isinstance(payload.get("results"), dict):
         return "eval-dict"
@@ -295,6 +405,13 @@ def main() -> None:
                 ]
             )
 
+    # Full ledger: include every JSON under results/ in a unified row format.
+    all_result_rows: list[list[str]] = []
+    for p in json_files:
+        info = infos[p]
+        payload = payloads[p]
+        all_result_rows.extend(_extract_experimental_rows(payload, info.rel))
+
     # ── Write markdown ─────────────────────────────────────────────────────
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     md: list[str] = []
@@ -371,28 +488,74 @@ def main() -> None:
                 stat_rows: list[list[str]] = []
                 for c in stats_data:
                     mc = c.get("mcnemar", {})
-                    sig = "✓" if mc.get("significant") else "✗"
+                    sig = "YES" if mc.get("significant") else "NO"
                     base_acc = c.get("baseline", {}).get("accuracy", 0)
                     meth_acc = c.get("method", {}).get("accuracy", 0)
                     stat_rows.append([
-                        c.get("label", ""),
+                        str(c.get("label", "")).replace("|", "\\|"),
                         str(c.get("n", "")),
                         f"{base_acc:.1%}",
                         f"{meth_acc:.1%}",
                         f"{c.get('delta_pp', 0):+.1f}pp",
+                        f"{c.get('delta_pp', 0) / 100:+.2f}",
                         f"{mc.get('p_exact', 1):.4f}",
+                        f"{mc.get('p_chi2', 1):.4f}",
                         sig,
+                        f"{mc.get('b', 0)}->{mc.get('c', 0)}",
                         f"{mc.get('n_discordant', 0)}/{c.get('n', '')}",
+                        f"{c.get('power_at_n', 0):.2f}",
                     ])
                 md.append(_md_table(
-                    ["Comparison", "n", "Greedy", "CURED", "Δpp", "p (exact)", "sig", "discordant"],
+                    [
+                        "Comparison",
+                        "n",
+                        "Greedy",
+                        "CURED",
+                        "Delta_pp",
+                        "Delta (proportion)",
+                        "p_exact",
+                        "p_chi2",
+                        "sig",
+                        "b->c",
+                        "discordant",
+                        "power",
+                    ],
                     stat_rows,
                 ))
                 md.append("")
                 md.append("_\\* p < 0.05 (exact binomial, scipy.stats.binomtest). Primary test._")
                 md.append("")
+                md.append("_p_chi2: chi-square statistic p-value without continuity correction._")
+                md.append("")
         except Exception:
             pass
+
+    # Full experimental ledger: every result JSON under results/ (including archived and misc).
+    md.append("## All experimental results (`results/**/*.json`)")
+    md.append("")
+    if all_result_rows:
+        md.append(
+            _md_table(
+                [
+                    "file",
+                    "kind",
+                    "model",
+                    "benchmark",
+                    "protocol",
+                    "scoring",
+                    "n",
+                    "acc",
+                    "rep",
+                    "n_scored",
+                    "runtime_min",
+                    "notes",
+                ],
+                all_result_rows,
+            )
+        )
+    else:
+        md.append("_No JSON files were found under results/._")
+    md.append("")
 
     md.append("## Canonical v2 — Long-form tables (all rows)")
     md.append("")
