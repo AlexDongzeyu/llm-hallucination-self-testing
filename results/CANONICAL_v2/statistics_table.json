@@ -1,0 +1,134 @@
+[
+  {
+    "label": "greedy vs CURED | 14b_truthfulqa",
+    "n": 500,
+    "baseline": {
+      "file": "results\\CANONICAL_v2\\main_greedy_14b_truthfulqa_n817.json",
+      "accuracy": 0.636,
+      "ci_95": [
+        0.594,
+        0.678
+      ]
+    },
+    "method": {
+      "file": "results\\CANONICAL_v2\\main_cured_14b_truthfulqa_n500.json",
+      "accuracy": 0.64,
+      "ci_95": [
+        0.598,
+        0.682
+      ]
+    },
+    "delta_pp": 0.4,
+    "mcnemar": {
+      "p_exact": 0.86005,
+      "p_chi2": 0.723674,
+      "net_gain": 2,
+      "b": 15,
+      "c": 17,
+      "n_discordant": 32,
+      "n_total": 500,
+      "significant": false
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=+0.4% | p_exact=0.8600 (not sig) | discordant=32/500"
+  },
+  {
+    "label": "greedy vs CURED | 32b_truthfulqa",
+    "n": 500,
+    "baseline": {
+      "file": "results\\CANONICAL_v2\\main_greedy_32b_truthfulqa_n817.json",
+      "accuracy": 0.598,
+      "ci_95": [
+        0.554,
+        0.64
+      ]
+    },
+    "method": {
+      "file": "results\\CANONICAL_v2\\main_cured_32b_truthfulqa_n500.json",
+      "accuracy": 0.596,
+      "ci_95": [
+        0.552,
+        0.638
+      ]
+    },
+    "delta_pp": -0.2,
+    "mcnemar": {
+      "p_exact": 1.0,
+      "p_chi2": 0.317311,
+      "net_gain": -1,
+      "b": 1,
+      "c": 0,
+      "n_discordant": 1,
+      "n_total": 500,
+      "significant": false
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=-0.2% | p_exact=1.0000 (not sig) | discordant=1/500"
+  },
+  {
+    "label": "greedy vs CURED | 3b_truthfulqa",
+    "n": 500,
+    "baseline": {
+      "file": "results\\CANONICAL_v2\\main_greedy_3b_truthfulqa_n817.json",
+      "accuracy": 0.518,
+      "ci_95": [
+        0.474,
+        0.562
+      ]
+    },
+    "method": {
+      "file": "results\\CANONICAL_v2\\main_cured_3b_truthfulqa_n500.json",
+      "accuracy": 0.514,
+      "ci_95": [
+        0.47,
+        0.558
+      ]
+    },
+    "delta_pp": -0.4,
+    "mcnemar": {
+      "p_exact": 0.855536,
+      "p_chi2": 0.715001,
+      "net_gain": -2,
+      "b": 16,
+      "c": 14,
+      "n_discordant": 30,
+      "n_total": 500,
+      "significant": false
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=-0.4% | p_exact=0.8555 (not sig) | discordant=30/500"
+  },
+  {
+    "label": "greedy vs CURED | 8b_truthfulqa",
+    "n": 500,
+    "baseline": {
+      "file": "results\\CANONICAL_v2\\main_greedy_8b_truthfulqa_n817.json",
+      "accuracy": 0.482,
+      "ci_95": [
+        0.44,
+        0.526
+      ]
+    },
+    "method": {
+      "file": "results\\CANONICAL_v2\\main_cured_8b_truthfulqa_n500.json",
+      "accuracy": 0.496,
+      "ci_95": [
+        0.452,
+        0.54
+      ]
+    },
+    "delta_pp": 1.4,
+    "mcnemar": {
+      "p_exact": 0.310505,
+      "p_chi2": 0.236724,
+      "net_gain": 7,
+      "b": 14,
+      "c": 21,
+      "n_discordant": 35,
+      "n_total": 500,
+      "significant": false
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=+1.4% | p_exact=0.3105 (not sig) | discordant=35/500"
+  }
+]

@@ -217,6 +217,9 @@ def main() -> None:
     pivot_truthfulqa_n200: list[dict[str, Any]] = []
     pivot_medhallu_n200: list[dict[str, Any]] = []
     pivot_profiles: list[dict[str, Any]] = []
+    # Phase 4: CURED accuracy by (scale, benchmark) and greedy accuracy by scale
+    pivot_main_cured: dict[tuple[str, str], str] = {}   # (scale, bench) -> acc
+    pivot_main_greedy: dict[str, str] = {}              # scale -> acc (truthfulqa only)
 
     for p in canonical_files:
         payload = payloads[p]
@@ -238,26 +241,37 @@ def main() -> None:
             )
             continue
 
-        # eval dicts
         results = payload.get("results")
         if not isinstance(results, dict):
             continue
+
         for bench, proto_map in results.items():
             if not isinstance(proto_map, dict):
                 continue
             for proto, res in proto_map.items():
                 if not isinstance(res, dict):
                     continue
-                if str(payload.get("scoring", "")) != "cosine":
-                    continue
-                if not p.name.startswith("ablation_") or not p.name.endswith("_n200.json"):
-                    continue
                 acc = res.get("accuracy")
-                item = {"scale": scale, "method": str(proto), "acc": _fmt_pct(acc)}
-                if str(bench) == "truthfulqa":
-                    pivot_truthfulqa_n200.append(item)
-                if str(bench) == "medhallu":
-                    pivot_medhallu_n200.append(item)
+
+                # Phase 2 ablation pivot (greedy/alta/cove/iti only, cosine scored)
+                if (p.name.startswith("ablation_") and p.name.endswith("_n200.json")
+                        and str(payload.get("scoring", "")) == "cosine"):
+                    item = {"scale": scale, "method": str(proto), "acc": _fmt_pct(acc)}
+                    if str(bench) == "truthfulqa":
+                        pivot_truthfulqa_n200.append(item)
+                    if str(bench) == "medhallu":
+                        pivot_medhallu_n200.append(item)
+
+                # Phase 4 CURED new-router pivot
+                if (p.name.startswith("main_cured_") and "old_" not in p.name
+                        and str(proto) == "cured"):
+                    bench_label = "strategyqa" if str(bench) == "custom" else str(bench)
+                    pivot_main_cured[(scale, bench_label)] = _fmt_pct(acc)
+
+                # Phase 4 greedy baseline pivot (truthfulqa only)
+                if p.name.startswith("main_greedy_") and str(proto) == "greedy":
+                    bench_label = "strategyqa" if str(bench) == "custom" else str(bench)
+                    pivot_main_greedy[(scale, bench_label)] = _fmt_pct(acc)
 
     # ── Non-canonical: group by provider-ish prefixes, otherwise inventory ──
     provider_eval_rows: list[list[str]] = []
@@ -293,25 +307,24 @@ def main() -> None:
 
     md.append("## Canonical v2 — Paper-style tables (auto)")
     md.append("")
-    # Table 1/2: ablation grid snapshots (n=200)
-    methods = ["greedy", "alta", "cove", "iti", "delta_dola", "cured"]
+    # Table 1/2: ablation grid snapshots (n=200). Phase 2 ran greedy/alta/cove/iti only.
+    ablation_methods = ["greedy", "alta", "cove", "iti"]
     if pivot_truthfulqa_n200:
-        md.append(_pivot_table("TABLE 1 — Ablations: TruthfulQA (cosine, n=200)", pivot_truthfulqa_n200, methods=methods))
+        md.append(_pivot_table("TABLE 1 — Ablations: TruthfulQA (cosine, n=200)", pivot_truthfulqa_n200, methods=ablation_methods))
         md.append("")
     else:
         md.append("### TABLE 1 — Ablations: TruthfulQA (cosine, n=200)\n\n_running…_\n")
 
     if pivot_medhallu_n200:
-        md.append(_pivot_table("TABLE 2 — Ablations: MedHallu (cosine, n=200)", pivot_medhallu_n200, methods=methods))
+        md.append(_pivot_table("TABLE 2 — Ablations: MedHallu (cosine, n=200)", pivot_medhallu_n200, methods=ablation_methods))
         md.append("")
     else:
         md.append("### TABLE 2 — Ablations: MedHallu (cosine, n=200)\n\n_running…_\n")
 
     # Table 3: mechanistic profile by scale
     if pivot_profiles:
-        # deterministic order
-        order = {"3B": 0, "8B": 1, "14B": 2, "32B": 3}
-        pivot_profiles.sort(key=lambda x: order.get(str(x["scale"]), 9))
+        scale_order = {"3B": 0, "8B": 1, "14B": 2, "32B": 3}
+        pivot_profiles.sort(key=lambda x: scale_order.get(str(x["scale"]), 9))
         md.append("### TABLE 3 — Mechanistic profile by model scale")
         md.append("")
         md.append(
@@ -323,6 +336,63 @@ def main() -> None:
         md.append("")
     else:
         md.append("### TABLE 3 — Mechanistic profile by model scale\n\n_running…_\n")
+
+    # Table 4: Phase 4 main results — CURED accuracy by scale × benchmark
+    if pivot_main_cured:
+        scales = ["3B", "8B", "14B", "32B"]
+        benchmarks = ["truthfulqa", "medhallu", "strategyqa"]
+        md.append("### TABLE 4 — Phase 4 Main: CURED (new router, n=500) accuracy")
+        md.append("")
+        header = ["Benchmark"] + scales
+        rows4: list[list[str]] = []
+        for bench in benchmarks:
+            row = [bench]
+            for sc in scales:
+                row.append(pivot_main_cured.get((sc, bench), "—"))
+            rows4.append(row)
+        # Greedy baseline row (truthfulqa only, n=817)
+        greedy_row = ["greedy baseline (n=817)"]
+        for sc in scales:
+            greedy_row.append(pivot_main_greedy.get((sc, "truthfulqa"), "—"))
+        rows4.append(greedy_row)
+        md.append(_md_table(header, rows4))
+        md.append("")
+    else:
+        md.append("### TABLE 4 — Phase 4 Main results\n\n_No main_cured_*.json found yet._\n")
+
+    # Table 5: Phase 5 statistics (from statistics_table.json if present)
+    stats_path = RESULTS_DIR / "CANONICAL_v2" / "statistics_table.json"
+    if stats_path.exists():
+        try:
+            stats_data: list[dict[str, Any]] = json.loads(stats_path.read_text(encoding="utf-8"))
+            if stats_data:
+                md.append("### TABLE 5 — Phase 5 Statistical Tests (CURED vs Greedy, paired McNemar)")
+                md.append("")
+                stat_rows: list[list[str]] = []
+                for c in stats_data:
+                    mc = c.get("mcnemar", {})
+                    sig = "✓" if mc.get("significant") else "✗"
+                    base_acc = c.get("baseline", {}).get("accuracy", 0)
+                    meth_acc = c.get("method", {}).get("accuracy", 0)
+                    stat_rows.append([
+                        c.get("label", ""),
+                        str(c.get("n", "")),
+                        f"{base_acc:.1%}",
+                        f"{meth_acc:.1%}",
+                        f"{c.get('delta_pp', 0):+.1f}pp",
+                        f"{mc.get('p_exact', 1):.4f}",
+                        sig,
+                        f"{mc.get('n_discordant', 0)}/{c.get('n', '')}",
+                    ])
+                md.append(_md_table(
+                    ["Comparison", "n", "Greedy", "CURED", "Δpp", "p (exact)", "sig", "discordant"],
+                    stat_rows,
+                ))
+                md.append("")
+                md.append("_\\* p < 0.05 (exact binomial, scipy.stats.binomtest). Primary test._")
+                md.append("")
+        except Exception:
+            pass
 
     md.append("## Canonical v2 — Long-form tables (all rows)")
     md.append("")

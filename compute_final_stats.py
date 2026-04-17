@@ -26,11 +26,17 @@ import argparse
 import glob
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
 from scipy import stats
 from scipy.stats import binomtest
+
+
+def _strip_n_suffix(key: str) -> str:
+    """Strip trailing _n<digits> from a filename stem key for pairing."""
+    return re.sub(r"_n\d+$", "", key)
 
 
 def parse_args() -> argparse.Namespace:
@@ -184,8 +190,8 @@ def compare_pair(fpath_a: str, fpath_b: str, label: str, n_bootstrap: int) -> di
         "mcnemar": mc,
         "power_at_n": power_analysis(n),
         "interpretation": (
-            f"Δ={acc_b - acc_a:+.1%} | p_exact={mc['p_exact']:.4f} "
-            f"({'✓ sig' if mc['significant'] else '✗ not sig'}) | "
+            f"delta={acc_b - acc_a:+.1%} | p_exact={mc['p_exact']:.4f} "
+            f"({'sig' if mc['significant'] else 'not sig'}) | "
             f"discordant={mc['n_discordant']}/{n}"
         ),
     }
@@ -193,11 +199,13 @@ def compare_pair(fpath_a: str, fpath_b: str, label: str, n_bootstrap: int) -> di
 
 def print_table(comparisons: list[dict]) -> None:
     """Print a formatted paper-ready table."""
-    print("\n" + "=" * 80)
-    print(f"{'Label':<40} {'Base':>6} {'Method':>6} {'Δpp':>6} {'p':>8} {'sig':>4}")
-    print("-" * 80)
+    lines = [
+        "\n" + "=" * 80,
+        f"{'Label':<40} {'Base':>6} {'Method':>6} {'Dpp':>6} {'p':>8} {'sig':>4}",
+        "-" * 80,
+    ]
     for c in comparisons:
-        print(
+        lines.append(
             f"{c['label'][:39]:<40} "
             f"{c['baseline']['accuracy']:>6.1%} "
             f"{c['method']['accuracy']:>6.1%} "
@@ -205,8 +213,8 @@ def print_table(comparisons: list[dict]) -> None:
             f"{c['mcnemar']['p_exact']:>8.4f} "
             f"{'*' if c['mcnemar']['significant'] else '':>4}"
         )
-    print("=" * 80)
-    print("* p < 0.05 (exact binomial). Primary test: scipy.stats.binomtest.\n")
+    lines += ["=" * 80, "* p < 0.05 (exact binomial). Primary test: scipy.stats.binomtest.\n"]
+    print("\n".join(lines).encode("ascii", errors="replace").decode("ascii"))
 
 
 def main() -> None:
@@ -223,14 +231,17 @@ def main() -> None:
         print(f"  {comp['interpretation']}")
     else:
         # Auto-scan mode: pair greedy_* with cured_* files by (model_size, benchmark)
+        # Strip _n<digits> suffix so "8b_truthfulqa_n817" matches "8b_truthfulqa_n500".
         results_dir = Path(args.results_dir)
         greedy_files = {
-            Path(f).stem.replace("main_greedy_", ""): f
+            _strip_n_suffix(Path(f).stem.replace("main_greedy_", "")): f
             for f in glob.glob(str(results_dir / "main_greedy_*.json"))
         }
+        # Skip old-router files for automatic pairing (keep new router only).
         cured_files = {
-            Path(f).stem.replace("main_cured_", ""): f
+            _strip_n_suffix(Path(f).stem.replace("main_cured_", "")): f
             for f in glob.glob(str(results_dir / "main_cured_*.json"))
+            if "old_" not in Path(f).stem
         }
 
         if not greedy_files or not cured_files:
@@ -259,7 +270,7 @@ def main() -> None:
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(comparisons, indent=2), encoding="utf-8")
-    print(f"Saved statistics → {out_path}")
+    print(f"Saved statistics -> {out_path}")
 
 
 if __name__ == "__main__":
