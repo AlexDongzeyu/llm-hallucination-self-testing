@@ -1,0 +1,125 @@
+{
+  "model": "Qwen/Qwen2.5-14B-Instruct",
+  "load_in_4bit": true,
+  "protocols": [
+    "greedy",
+    "alta",
+    "cove",
+    "cured"
+  ],
+  "benchmark": "both",
+  "n_target": 100,
+  "max_new_tokens": 80,
+  "cosine_threshold": 0.65,
+  "scoring": "cosine",
+  "calibration": {
+    "mean_r2": 0.5292446892238669,
+    "alta_viable": false,
+    "d2h_threshold": -7.2899108827114105,
+    "iti_available": false
+  },
+  "results": {
+    "truthfulqa": {
+      "greedy": {
+        "n_total": 100,
+        "n_scored": 91,
+        "accuracy": 0.6264,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.09,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 17.87
+      },
+      "alta": {
+        "n_total": 100,
+        "n_scored": 96,
+        "accuracy": 0.6875,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.04,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 18.42
+      },
+      "cove": {
+        "n_total": 100,
+        "n_scored": 95,
+        "accuracy": 0.5579,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.05,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 82.23
+      },
+      "cured": {
+        "n_total": 100,
+        "n_scored": 91,
+        "accuracy": 0.6264,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.09,
+        "routing": {
+          "greedy_general": 1.0
+        },
+        "runtime_min": 18.59
+      }
+    },
+    "medhallu": {
+      "greedy": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.55,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 21.72
+      },
+      "alta": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.58,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 22.46
+      },
+      "cove": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.53,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 78.28
+      },
+      "cured": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.54,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove_medical": 0.33,
+          "greedy_medical_no_iti": 0.43,
+          "greedy_general": 0.24
+        },
+        "runtime_min": 40.14
+      }
+    }
+  }
+}
