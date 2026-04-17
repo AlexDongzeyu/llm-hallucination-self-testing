@@ -1,0 +1,150 @@
+{
+  "model": "meta-llama/Llama-3.2-3B-Instruct",
+  "load_in_4bit": false,
+  "protocols": [
+    "greedy",
+    "alta",
+    "delta_dola",
+    "cove",
+    "cured"
+  ],
+  "benchmark": "both",
+  "n_target": 100,
+  "max_new_tokens": 80,
+  "cosine_threshold": 0.65,
+  "scoring": "cosine",
+  "calibration": {
+    "mean_r2": 0.5118921178956556,
+    "alta_viable": false,
+    "d2h_threshold": -0.9392414689064026,
+    "iti_available": false
+  },
+  "results": {
+    "truthfulqa": {
+      "greedy": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.68,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 5.74
+      },
+      "alta": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.67,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 6.11
+      },
+      "delta_dola": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.63,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "delta_dola": 1.0
+        },
+        "runtime_min": 6.01
+      },
+      "cove": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.59,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 21.07
+      },
+      "cured": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.68,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy_general": 1.0
+        },
+        "runtime_min": 5.78
+      }
+    },
+    "medhallu": {
+      "greedy": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.56,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 6.42
+      },
+      "alta": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.55,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 6.97
+      },
+      "delta_dola": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.56,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "delta_dola": 1.0
+        },
+        "runtime_min": 6.81
+      },
+      "cove": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.53,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 22.56
+      },
+      "cured": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.58,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy_medical_no_iti": 0.4,
+          "cove_medical": 0.36,
+          "greedy_general": 0.24
+        },
+        "runtime_min": 12.03
+      }
+    }
+  }
+}

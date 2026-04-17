@@ -1,0 +1,74 @@
+{
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "load_in_4bit": true,
+  "protocols": [
+    "greedy",
+    "alta",
+    "cove",
+    "cured"
+  ],
+  "benchmark": "custom",
+  "n_target": 100,
+  "max_new_tokens": 10,
+  "cosine_threshold": 0.65,
+  "scoring": "yesno",
+  "calibration": {
+    "mean_r2": 0.554324426832203,
+    "alta_viable": true,
+    "d2h_threshold": -7.49809193611145,
+    "iti_available": false
+  },
+  "results": {
+    "custom": {
+      "greedy": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.55,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 0.34
+      },
+      "alta": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.53,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 0.33
+      },
+      "cove": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.57,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "cove": 1.0
+        },
+        "runtime_min": 14.55
+      },
+      "cured": {
+        "n_total": 100,
+        "n_scored": 100,
+        "accuracy": 0.53,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta_medical_structured": 0.58,
+          "alta_general_structured": 0.42
+        },
+        "runtime_min": 0.32
+      }
+    }
+  }
+}

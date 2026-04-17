@@ -4,13 +4,45 @@ Inference-time hallucination mitigation experiments for RLHF-tuned LLMs.
 
 ## Repository Layout
 
-- cured.py: unified runner for local and API evaluation protocols.
-- benchmarks/: benchmark CSV inputs.
-- experiments/: one-off and paper-generation experiment scripts.
-- scripts/: reproducible automation scripts (GPU setup, API jobs, CSV rebuilders).
-- src/: reusable model-analysis and decoding modules.
-- results/: persistent structured artifacts.
-- logs/: runtime logs.
+```
+LLM_Hallucination/
+│
+├── cured.py                  ← MAIN SCRIPT: run all protocols/benchmarks here
+├── calibrate_router.py       ← Phase 3: learn routing thresholds from ablations
+├── compute_final_stats.py    ← Phase 5: McNemar tests + bootstrap CI
+├── requirements.txt
+├── README.md
+├── all_results.md            ← aggregated results narrative
+│
+├── configs/
+│   └── router_thresholds.json   ← router tau/beta values (updated by calibrate_router.py)
+│
+├── benchmarks/               ← frozen benchmark CSVs (TruthfulQA, MedHallu, etc.)
+│
+├── experiments/              ← experiment scripts (sweeps, figures, profiling)
+│   ├── compute_logit_linearity.py   ← Phase 1: measure R², κ, ECR per model
+│   └── ...
+│
+├── src/                      ← reusable library modules (generation, probing, routing)
+│
+├── scripts/
+│   ├── prep_benchmarks.py    ← download/rebuild benchmark CSVs
+│   ├── deploy_and_queue.py   ← sync code + queue pipeline on remote GPU
+│   ├── check_status.py       ← check GPU / pipeline status
+│   ├── autodl/               ← GPU server shell scripts (run_phase*.sh, bootstrap)
+│   └── maintenance/          ← one-time patch and diagnostic tools (not part of main pipeline)
+│
+├── data/                     ← ITI probes, trajectory datasets
+├── results/
+│   └── CANONICAL_v2/         ← SINGLE SOURCE OF TRUTH for all reportable results
+├── logs/                     ← runtime logs
+└── plots/                    ← visualization outputs
+```
+
+**Run the full pipeline on a GPU server:**
+```bash
+python scripts/deploy_and_queue.py   # syncs code + queues Phase 1→5 automatically
+```
 
 ## Canonical Result Location
 

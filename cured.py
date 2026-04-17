@@ -251,11 +251,22 @@ def has_repetition(text: str, window: int = 5) -> bool:
     return len(ngrams) != len(set(ngrams))
 
 
+def scorer_device_str(scorer: SentenceTransformer) -> str:
+    d = getattr(scorer, "device", None)
+    if d is not None:
+        return str(d)
+    td = getattr(scorer, "_target_device", None)
+    if td is not None:
+        return str(td)
+    return "cpu"
+
+
 def cosine_match(scorer: SentenceTransformer, generated: str, reference: str, threshold: float) -> bool:
     if not generated.strip() or not reference.strip():
         return False
-    eg = scorer.encode(generated, convert_to_tensor=True, device="cpu")
-    er = scorer.encode(reference, convert_to_tensor=True, device="cpu")
+    dev = scorer_device_str(scorer)
+    eg = scorer.encode(generated, convert_to_tensor=True, device=dev)
+    er = scorer.encode(reference, convert_to_tensor=True, device=dev)
     return float(util.cos_sim(eg, er).item()) >= threshold
 
 
@@ -1271,6 +1282,40 @@ def api_generate(
 # ---------------------------------------------------------------------------
 
 
+def configure_torch_backends_for_inference() -> None:
+    """Enable TF32 / matmul settings that speed Ampere+ GPUs without changing numerics much."""
+    if not torch.cuda.is_available():
+        return
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    try:
+        torch.set_float32_matmul_precision("high")
+    except Exception:
+        pass
+
+
+def resolve_scorer_device(
+    scorer_device_arg: str, load_in_4bit: bool, model_params_b: float
+) -> str:
+    """
+    Place MiniLM scorer on GPU when VRAM is likely safe; keep CPU for 4-bit or large LMs.
+    Override with env CURED_SCORER_DEVICE=cpu|cuda or --scorer-device.
+    """
+    env = os.environ.get("CURED_SCORER_DEVICE", "").strip().lower()
+    if env in ("cpu", "cuda"):
+        scorer_device_arg = env
+    if scorer_device_arg == "cpu":
+        return "cpu"
+    if scorer_device_arg == "cuda":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    # auto
+    if load_in_4bit:
+        return "cpu"
+    if model_params_b >= 12.0:
+        return "cpu"
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
 def load_model_and_tokenizer(model_name: str, load_in_4bit: bool) -> tuple[Any, Any]:
     p(f"\nLoading model: {model_name}")
     kwargs: dict[str, Any] = {"device_map": "auto", "trust_remote_code": True}
@@ -1296,7 +1341,17 @@ def load_model_and_tokenizer(model_name: str, load_in_4bit: bool) -> tuple[Any, 
     if tokenizer.pad_token_id is None and tokenizer.eos_token_id is not None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
+    use_sdpa = os.environ.get("CURED_DISABLE_SDPA", "").strip() != "1"
+    model = None
+    if use_sdpa:
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, attn_implementation="sdpa", **kwargs
+            )
+        except Exception as exc:
+            p(f"  attn_implementation=sdpa failed ({type(exc).__name__}: {exc}); using default attention")
+    if model is None:
+        model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
     model.eval()
 
     dev = get_model_device(model)
@@ -1398,6 +1453,25 @@ def get_layer_logits_cached(model: Any, input_ids: torch.Tensor, past_key_values
     return np.asarray(all_logits, dtype=np.float32), getattr(outputs, "past_key_values", None)
 
 
+def get_final_logits_cached(
+    model: Any, input_ids: torch.Tensor, past_key_values: Any = None
+) -> tuple[np.ndarray, Any]:
+    """
+    Next-token logits from the final LM head only (no per-layer hidden_states).
+    Matches layer_logits[-1] from get_layer_logits_cached but avoids O(n_layers) extra work per step.
+    """
+    with torch.no_grad():
+        outputs = model(
+            input_ids=input_ids,
+            past_key_values=past_key_values,
+            output_hidden_states=False,
+            use_cache=True,
+        )
+    logits_t = outputs.logits[:, -1, :]
+    logits_np = logits_t.squeeze(0).detach().to(torch.float32).cpu().numpy()
+    return logits_np, getattr(outputs, "past_key_values", None)
+
+
 def compute_d2h_features(model: Any, tokenizer: Any, prompt: str) -> dict[str, float]:
     dev = get_model_device(model)
     input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
@@ -1428,22 +1502,89 @@ def compute_d2h_features(model: Any, tokenizer: Any, prompt: str) -> dict[str, f
 
 
 def greedy_generate(model: Any, tokenizer: Any, prompt: str, max_new_tokens: int = 80) -> str:
+    """Single-prompt greedy decoding via HF model.generate() (CUDA-optimised, no Python loop)."""
     dev = get_model_device(model)
     input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
-    layer_logits, past_kv = get_layer_logits_cached(model, input_ids, None)
-    generated: list[int] = []
+    with torch.no_grad():
+        out = model.generate(
+            input_ids,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            repetition_penalty=1.3,
+            pad_token_id=tokenizer.eos_token_id,
+            use_cache=True,
+        )
+    return tokenizer.decode(out[0][input_ids.shape[1]:], skip_special_tokens=True)
 
-    eos_id = tokenizer.eos_token_id
-    for _ in range(max_new_tokens):
-        logits = apply_repetition_penalty(layer_logits[-1], generated)
-        next_id = int(np.argmax(logits))
-        generated.append(next_id)
-        if eos_id is not None and next_id == eos_id:
-            break
-        step_ids = torch.tensor([[next_id]], device=dev)
-        layer_logits, past_kv = get_layer_logits_cached(model, step_ids, past_kv)
 
-    return tokenizer.decode(generated, skip_special_tokens=True)
+def _auto_batch_size(model_params_b: float, load_in_4bit: bool = False) -> int:
+    """Return a safe generation batch size for greedy/cove protocols.
+
+    Conservative: accounts for KV-cache growth during generation. 4-bit and
+    large models stay at 1 to avoid VRAM spikes.
+    """
+    if not torch.cuda.is_available():
+        return 1
+    if load_in_4bit:
+        return 1
+    try:
+        vram_gb = torch.cuda.get_device_properties(0).total_memory / 1024 ** 3
+    except Exception:
+        vram_gb = 24.0
+    # 40GB+ A800/A100 class: push batches harder.
+    # KV-cache per seq is small relative to weights; safe headroom verified.
+    if model_params_b >= 30.0:
+        return 1
+    if model_params_b >= 12.0:
+        return 2 if vram_gb >= 35 else 1
+    if model_params_b >= 7.0:
+        return 4 if vram_gb >= 35 else 2
+    return 8 if vram_gb >= 35 else 2
+
+
+def batch_greedy_generate(
+    model: Any,
+    tokenizer: Any,
+    prompts: list[str],
+    max_new_tokens: int = 80,
+) -> list[str]:
+    """Generate greedy outputs for B prompts in a single GPU call (left-padded batch).
+
+    Produces the same text as calling greedy_generate() individually:
+    identical do_sample=False argmax decoding with the same repetition penalty.
+    """
+    if not prompts:
+        return []
+    if len(prompts) == 1:
+        return [greedy_generate(model, tokenizer, prompts[0], max_new_tokens)]
+
+    dev = get_model_device(model)
+    orig_padding_side = tokenizer.padding_side
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+
+    enc = tokenizer(prompts, padding=True, truncation=False, return_tensors="pt")
+    input_ids = enc["input_ids"].to(dev)
+    attn_mask = enc["attention_mask"].to(dev)
+    prompt_len = input_ids.shape[1]
+
+    with torch.no_grad():
+        out = model.generate(
+            input_ids,
+            attention_mask=attn_mask,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            repetition_penalty=1.3,
+            pad_token_id=tokenizer.eos_token_id,
+            use_cache=True,
+        )
+
+    tokenizer.padding_side = orig_padding_side
+    return [
+        tokenizer.decode(out[i, prompt_len:], skip_special_tokens=True)
+        for i in range(out.shape[0])
+    ]
 
 
 def compute_delta_dola_logits(
@@ -1904,7 +2045,9 @@ def selfcheck_generate(
 
     consistency = 0.0
     if draft.strip() and samples:
-        embs = scorer.encode([draft] + samples, convert_to_tensor=True, device="cpu")
+        embs = scorer.encode(
+            [draft] + samples, convert_to_tensor=True, device=scorer_device_str(scorer)
+        )
         sims = [float(util.cos_sim(embs[0], embs[i]).item()) for i in range(1, len(embs))]
         consistency = float(np.mean(sims)) if sims else 0.0
 
@@ -1975,6 +2118,154 @@ def measure_r2(model: Any, tokenizer: Any, n_questions: int = DEFAULT_R2_QUESTIO
     mean_r2 = float(np.mean(r2_values)) if r2_values else 0.0
     p(f"  Calibrated mean R2={mean_r2:.4f} (ALTA enabled: {mean_r2 >= ALTA_R2_CUTOFF})")
     return mean_r2
+
+
+# ---------------------------------------------------------------------------
+# Per-question trajectory features (used by CUREDRouterV2)
+# ---------------------------------------------------------------------------
+
+
+def _compute_layer_features(
+    hidden_states: Any,
+    lm_head: Any,
+    norm: Any,
+    layer_start_ratio: float = 0.7,
+    top_k: int = 50,
+) -> tuple[float, float, float]:
+    """Single-pass computation of (mean_r2, var_r2, kappa) from late-layer logits.
+
+    Builds the (L, vocab) logit matrix once and reuses it for both R² and κ,
+    avoiding the 2× redundant GPU→CPU transfer of computing them separately.
+    Returns (r2_mean, r2_var, kappa).
+    """
+    n_layers = len(hidden_states)
+    start = max(0, int(n_layers * layer_start_ratio))
+    layer_logits_list: list[np.ndarray] = []
+    for h in hidden_states[start:]:
+        logits = lm_head(norm(h[:, -1, :])).squeeze(0).detach().cpu().float().numpy()
+        layer_logits_list.append(logits)
+    logit_matrix = np.asarray(layer_logits_list, dtype=np.float32)  # (L, vocab)
+    L = int(logit_matrix.shape[0])
+
+    if L < 2:
+        return 0.0, 0.0, 0.0
+
+    topk_idx = np.argsort(logit_matrix[-1])[-top_k:]
+    x_n = np.arange(L, dtype=np.float32)
+    x_n = (x_n - x_n.mean()) / max(float(x_n.std()), 1e-8)  # zero-mean, unit-std
+
+    r2s: list[float] = []
+    kappas: list[float] = []
+    for tok in topk_idx:
+        y = logit_matrix[:, int(tok)]
+        ss_tot = float(np.var(y)) * L
+        if ss_tot < 1e-8:
+            continue
+
+        # Linear fit → R²
+        A_lin = np.column_stack([x_n, np.ones(L)])
+        b_l, _, _, _ = np.linalg.lstsq(A_lin, y, rcond=None)
+        ss_lin = float(np.sum((y - A_lin @ b_l) ** 2))
+        r2_lin = max(0.0, 1.0 - ss_lin / ss_tot)
+        r2s.append(r2_lin)
+
+        # Quadratic fit → κ (only meaningful with ≥3 layers)
+        if L >= 3:
+            A_quad = np.column_stack([x_n ** 2, x_n, np.ones(L)])
+            b_q, _, _, _ = np.linalg.lstsq(A_quad, y, rcond=None)
+            ss_quad = float(np.sum((y - A_quad @ b_q) ** 2))
+            r2_quad = max(0.0, 1.0 - ss_quad / ss_tot)
+            kappas.append(max(0.0, (r2_quad - r2_lin) / (1.0 - r2_lin + 1e-8)))
+
+    r2_arr = np.array(r2s, dtype=np.float32) if r2s else np.array([0.0], dtype=np.float32)
+    kappa_val = float(np.mean(kappas)) if kappas else 0.0
+    return float(r2_arr.mean()), float(r2_arr.var()), kappa_val
+
+
+def compute_per_question_r2(
+    hidden_states: Any,
+    lm_head: Any,
+    norm: Any,
+    layer_start_ratio: float = 0.7,
+    top_k: int = 50,
+) -> tuple[float, float]:
+    """Thin wrapper — returns (r2_mean, r2_var) from _compute_layer_features."""
+    r2_mean, r2_var, _ = _compute_layer_features(hidden_states, lm_head, norm, layer_start_ratio, top_k)
+    return r2_mean, r2_var
+
+
+def compute_curvature(
+    hidden_states: Any,
+    lm_head: Any,
+    norm: Any,
+    layer_start_ratio: float = 0.7,
+    top_k: int = 50,
+) -> float:
+    """Thin wrapper — returns κ (quadratic-gain fraction) from _compute_layer_features."""
+    _, _, kappa = _compute_layer_features(hidden_states, lm_head, norm, layer_start_ratio, top_k)
+    return kappa
+
+
+def compute_ecr(
+    hidden_states: Any,
+    lm_head: Any,
+    norm: Any,
+) -> tuple[float, float, float]:
+    """ECR = H_final / H_peak across all transformer layers.
+
+    Measures RLHF entropy compression. Low ECR → entropy gate barely fires → ALTA suppressed.
+    Measured 3B profile: H1=0.08, H7=10.83, H28=0.85 → ECR=0.078.
+
+    IMPORTANT: caller must pass hidden_states with the embedding layer already removed
+    (e.g. out.hidden_states[1:]).  hidden_states[0] here = transformer layer 1,
+    hidden_states[-1] = final transformer layer.
+    """
+    entropies: list[float] = []
+    for h in hidden_states:
+        logits = lm_head(norm(h[:, -1, :])).squeeze(0).detach().cpu().float()
+        probs = torch.softmax(logits, dim=-1).numpy()
+        H = float(-np.sum(probs * np.log(np.clip(probs, 1e-10, 1.0))))
+        entropies.append(H)
+    H_final = entropies[-1]
+    H_peak = max(entropies)
+    ECR = H_final / (H_peak + 1e-8)
+    return float(ECR), float(H_final), float(H_peak)
+
+
+def compute_self_consistency(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    k: int = 3,
+    temperature: float = 0.7,
+    max_new_tokens: int = 40,
+) -> tuple[float, str]:
+    """Sample k responses and return (SC_score, modal_answer).
+
+    SC = fraction of k samples that agree with the modal answer.
+    SC=1.0 → all agree; SC=0.33 → all disagree.
+    """
+    from collections import Counter
+    dev = get_model_device(model)
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
+    responses: list[str] = []
+    for _ in range(k):
+        with torch.no_grad():
+            out = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=temperature,
+                repetition_penalty=1.3,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        text = tokenizer.decode(
+            out[0][input_ids.shape[1]:], skip_special_tokens=True
+        ).strip().lower()[:50]
+        responses.append(text)
+    modal = Counter(responses).most_common(1)[0][0]
+    sc = sum(1 for r in responses if r == modal) / k
+    return float(sc), modal
 
 
 def try_load_medhallu_dataset() -> tuple[Dataset, str, str | None, str]:
@@ -2210,6 +2501,233 @@ def train_iti_probes(
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# CUREDRouterV2 — 5-gate principled router
+# ---------------------------------------------------------------------------
+
+
+def score_alta(
+    r2_q: float,
+    var_r2_q: float,
+    kappa_q: float,
+    H_final: float,
+    tau_r2: float = 0.65,
+    tau_H: float = 1.0,
+    beta1: float = 3.0,
+    beta2: float = 0.5,
+    beta3: float = 5.0,
+    beta4: float = 2.0,
+) -> float:
+    """Composite ALTA score ∈ [0,1]. >0.5 → route to ALTA.
+
+    Signs: R² and entropy increase the score (more linearity/uncertainty → ALTA helps).
+    Curvature and R² variance decrease it (non-linear trajectory → linear extrapolation unreliable).
+    Betas are configurable from router_thresholds.json and updated by calibrate_router.py.
+    """
+    lc = (
+        beta1 * (r2_q - tau_r2)
+        + beta2 * (H_final - tau_H)
+        - beta3 * kappa_q
+        - beta4 * var_r2_q
+    )
+    return float(1.0 / (1.0 + np.exp(-lc)))
+
+
+def score_cove(
+    SC_q: float | None,
+    H_final: float,
+    domain_medical: int,
+    model_params_B: float,
+    tau_SC: float = 0.60,
+    tau_H: float = 3.0,
+    max_medical_params: float = 4.0,
+    beta_SC: float = 2.0,
+    beta_H: float = 0.5,
+    beta_med_penalty: float = 3.0,
+) -> float:
+    """CoVe score ∈ [0,1]. >0.5 → route to CoVe.
+
+    Heavy penalty for medical+large model (hallucination snowballing risk from Zhang et al. 2025).
+    SC_q=None (large models) → treat as SC_q=tau_SC (neutral signal).
+    """
+    sc_val = SC_q if SC_q is not None else tau_SC
+    penalty = beta_med_penalty * domain_medical * int(model_params_B > max_medical_params)
+    lc = beta_SC * (tau_SC - sc_val) + beta_H * (H_final - tau_H) - penalty
+    return float(1.0 / (1.0 + np.exp(-lc)))
+
+
+class CUREDRouterV2:
+    """5-gate principled router.
+
+    Gate 1: Confidence gate — if model is already confident/consistent → greedy
+    Gate 2: Feasibility gate — ALTA only if R² high, κ low, ECR above floor
+    Gate 3: Domain-safety gate — medical+large → ITI (avoids CoVe snowballing)
+    Gate 4: ALTA composite score — sigmoid of (R², κ, H_final, var_R²)
+    Gate 5: Uncertainty gate — CoVe if genuinely uncertain, else greedy
+    """
+
+    def __init__(
+        self,
+        model: Any,
+        tokenizer: Any,
+        arch: dict[str, Any],
+        model_params_B: float,
+        top_heads: np.ndarray | None,
+        head_vectors: np.ndarray | None,
+        thresholds: dict[str, Any],
+        compute_sc: bool = False,
+    ) -> None:
+        self.model = model
+        self.tokenizer = tokenizer
+        self.arch = arch
+        self.params_B = float(model_params_B)
+        self.top_heads = top_heads
+        self.head_vectors = head_vectors
+        self.compute_sc = compute_sc
+        self.iti_available = top_heads is not None and head_vectors is not None
+
+        self.tau_R2 = float(thresholds.get("tau_R2", 0.65))
+        self.tau_kappa = float(thresholds.get("tau_kappa", 0.08))
+        self.tau_ECR = float(thresholds.get("tau_ECR", 0.10))
+        self.tau_H_easy = float(thresholds.get("tau_H_easy", 0.5))
+        self.tau_H_hard = float(thresholds.get("tau_H_hard", 3.0))
+        self.tau_SC_easy = float(thresholds.get("tau_SC_easy", 0.90))
+        self.tau_SC_hard = float(thresholds.get("tau_SC_hard", 0.60))
+        self.beta1 = float(thresholds.get("beta1", 3.0))
+        self.beta2 = float(thresholds.get("beta2", 0.5))
+        self.beta3 = float(thresholds.get("beta3", 5.0))
+        self.beta4 = float(thresholds.get("beta4", 2.0))
+
+    def _features(self, prompt: str) -> tuple[float, float, float, float, float, float | None]:
+        dev = get_model_device(self.model)
+        ids = self.tokenizer.encode(prompt, return_tensors="pt").to(dev)
+        with torch.no_grad():
+            out = self.model(ids, output_hidden_states=True, use_cache=False)
+        # out.hidden_states[0] = embedding layer; [1:] = transformer layers 1..N
+        hs = out.hidden_states[1:]
+        norm, lm_head = get_final_norm_and_lm_head(self.model)
+
+        # Single pass over late-layer logit matrix for R², var(R²), κ
+        r2_q, var_r2_q, kappa_q = _compute_layer_features(hs, lm_head, norm)
+        # Full-depth pass for ECR (needs all layers, not just final 30%)
+        ECR_q, H_final, _ = compute_ecr(hs, lm_head, norm)
+
+        # SC: None for large models — 3× generate() at 32B adds ~2h for n=500
+        # Using a 1.0 sentinel would silently hijack Gate 1; None is explicit.
+        SC_q: float | None = None
+        if self.compute_sc and self.params_B <= 14.0:
+            SC_q, _ = compute_self_consistency(self.model, self.tokenizer, prompt, k=3)
+
+        return r2_q, var_r2_q, kappa_q, ECR_q, H_final, SC_q
+
+    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
+        domain = detect_domain(question)
+        prompt = format_prompt(self.tokenizer, question)
+        r2_q, var_r2_q, kappa_q, ECR_q, H_final, SC_q = self._features(prompt)
+
+        routing_log: dict[str, Any] = {
+            "r2_q": round(r2_q, 4),
+            "var_r2_q": round(var_r2_q, 4),
+            "kappa_q": round(kappa_q, 4),
+            "ECR_q": round(ECR_q, 4),
+            "H_final": round(H_final, 4),
+            "SC_q": round(SC_q, 4) if SC_q is not None else None,
+        }
+        domain_medical = int(domain == "medical")
+
+        # ── Gate 1: Confidence gate ──────────────────────────────────────
+        # SC_q is None for large models (params_B > 14) — use H_final only.
+        # Sentinel 1.0 would make SC condition always-true and collapse Gate 1 silently.
+        if self.params_B > 14.0:
+            gate1_fires = H_final < self.tau_H_easy
+        else:
+            gate1_fires = (
+                SC_q is not None
+                and SC_q >= self.tau_SC_easy
+                and H_final < self.tau_H_easy
+            )
+        if gate1_fires:
+            routing_log["gate"] = 1
+            return {
+                "text": greedy_generate(self.model, self.tokenizer, prompt, max_new_tokens),
+                "strategy": "greedy_confident",
+                "domain": domain,
+                **routing_log,
+            }
+
+        # ── Gate 2: Feasibility gate ─────────────────────────────────────
+        alta_ok = (
+            r2_q > self.tau_R2
+            and kappa_q < self.tau_kappa
+            and ECR_q > self.tau_ECR
+        )
+        routing_log["alta_feasible"] = int(alta_ok)
+        if not alta_ok:
+            return self._uncertainty_gate(
+                question, prompt, domain, domain_medical, SC_q, H_final, max_new_tokens, routing_log
+            )
+
+        # ── Gate 3: Domain-safety gate ───────────────────────────────────
+        # medical+large → ITI (CoVe snowballs on clinical MCQs at ≥8B)
+        if domain_medical and self.params_B > 4.0 and self.iti_available:
+            routing_log["gate"] = 3
+            text = iti_generate(
+                self.model,
+                self.tokenizer,
+                self.arch,
+                self.top_heads,
+                self.head_vectors,
+                prompt,
+                alpha=ITI_ALPHA,
+                max_new_tokens=max_new_tokens,
+            )
+            return {"text": text, "strategy": "iti_medical_gate3", "domain": domain, **routing_log}
+
+        # ── Gate 4: ALTA composite score ─────────────────────────────────
+        s_alta = score_alta(
+            r2_q, var_r2_q, kappa_q, H_final,
+            tau_r2=self.tau_R2,
+            beta1=self.beta1, beta2=self.beta2,
+            beta3=self.beta3, beta4=self.beta4,
+        )
+        routing_log["S_ALTA"] = round(s_alta, 4)
+        if s_alta > 0.5:
+            routing_log["gate"] = 4
+            out = alta_generate(self.model, self.tokenizer, prompt, max_new_tokens)
+            return {"text": out["text"], "strategy": "alta_gate4", "domain": domain, **routing_log}
+
+        # ── Gate 5: Uncertainty gate ─────────────────────────────────────
+        return self._uncertainty_gate(
+            question, prompt, domain, domain_medical, SC_q, H_final, max_new_tokens, routing_log
+        )
+
+    def _uncertainty_gate(
+        self,
+        question: str,
+        prompt: str,
+        domain: str,
+        domain_medical: int,
+        SC_q: float | None,
+        H_final: float,
+        max_new_tokens: int,
+        routing_log: dict[str, Any],
+    ) -> dict[str, Any]:
+        s_cove = score_cove(SC_q, H_final, domain_medical, self.params_B,
+                            tau_SC=self.tau_SC_hard, tau_H=self.tau_H_hard)
+        routing_log["S_CoVe"] = round(s_cove, 4)
+        routing_log["gate"] = 5
+        if s_cove > 0.5:
+            text = cove_generate(self.model, self.tokenizer, question, max_new_tokens)
+            return {"text": text, "strategy": "cove_gate5", "domain": domain, **routing_log}
+        text = greedy_generate(self.model, self.tokenizer, prompt, max_new_tokens)
+        return {"text": text, "strategy": "greedy_gate5", "domain": domain, **routing_log}
+
+
+# ---------------------------------------------------------------------------
+# CUREDRouter — original router (kept for --router old backward compatibility)
+# ---------------------------------------------------------------------------
+
+
 class CUREDRouter:
     def __init__(
         self,
@@ -2421,7 +2939,7 @@ def run_protocol(
     model: Any,
     tokenizer: Any,
     arch: dict[str, Any],
-    router: CUREDRouter,
+    router: Any,  # CUREDRouter or CUREDRouterV2
     scorer: SentenceTransformer,
     protocol: str,
     samples: list[dict[str, Any]],
@@ -2430,6 +2948,9 @@ def run_protocol(
     max_new_tokens: int,
     selfcheck_k: int,
     iti_probes: tuple[np.ndarray | None, np.ndarray | None],
+    save_per_question: bool = False,
+    load_in_4bit: bool = False,
+    model_params_b: float = 0.0,
 ) -> dict[str, Any]:
     top_heads, head_vectors = iti_probes
     correct = 0
@@ -2443,6 +2964,23 @@ def run_protocol(
 
     t0 = time.time()
 
+    # ── Batched pre-generation for greedy and cove (GPU-bound; safe to batch) ──
+    # These protocols do not need per-step hidden states, so B>1 is safe.
+    # Results are identical: same do_sample=False argmax decoding, same penalties.
+    # ALTA, delta_dola, ITI are left sequential (need output_hidden_states=True per step).
+    _bsz = _auto_batch_size(model_params_b, load_in_4bit)
+    _pregenerated: list[str] | None = None
+
+    if protocol in ("greedy",) and _bsz > 1 and len(samples) > 1:
+        p(f"  [batch] pre-generating {len(samples)} answers (batch_size={_bsz})...")
+        all_prompts = [format_prompt(tokenizer, s["question"]) for s in samples]
+        _pregenerated = []
+        for _b0 in range(0, len(all_prompts), _bsz):
+            _pregenerated.extend(
+                batch_greedy_generate(model, tokenizer, all_prompts[_b0:_b0 + _bsz], max_new_tokens)
+            )
+        p(f"  [batch] generation done, starting scoring loop...")
+
     for i, sample in enumerate(samples):
         q = sample["question"]
         ref = sample.get("reference", "")
@@ -2450,7 +2988,9 @@ def run_protocol(
         extra: dict[str, Any] = {}
 
         if protocol == "greedy":
-            text = greedy_generate(model, tokenizer, prompt, max_new_tokens=max_new_tokens)
+            text = _pregenerated[i] if _pregenerated is not None else greedy_generate(
+                model, tokenizer, prompt, max_new_tokens=max_new_tokens
+            )
             strategy = "greedy"
 
         elif protocol == "alta":
@@ -2580,19 +3120,30 @@ def run_protocol(
             if is_correct:
                 correct += 1
 
-        per_question.append(
-            {
-                "i": i + 1,
-                "question": q,
-                "reference": ref,
-                "domain": sample.get("domain", detect_domain(q)),
-                "strategy": strategy,
-                "correct": int(is_correct) if has_ref else None,
-                "repeated": int(rep),
-                "answer": text,
-                **extra,
-            }
-        )
+        pq_entry: dict[str, Any] = {
+            "i": i + 1,
+            "q_id": i,
+            "question": q,
+            "reference": ref,
+            "domain": sample.get("domain", detect_domain(q)),
+            "strategy": strategy,
+            "correct": int(is_correct) if has_ref else None,
+            "repeated": int(rep),
+            "answer": text,
+            **extra,
+        }
+        if save_per_question:
+            # Feature fields from CUREDRouterV2 routing_log (None for non-cured protocols).
+            pq_entry.update({
+                "r2_q": extra.get("r2_q"),
+                "var_r2_q": extra.get("var_r2_q"),
+                "kappa_q": extra.get("kappa_q"),
+                "ecr_q": extra.get("ECR_q"),
+                "h_final": extra.get("H_final"),
+                "sc_q": extra.get("SC_q"),
+                "domain_medical": int(sample.get("domain", detect_domain(q)) == "medical"),
+            })
+        per_question.append(pq_entry)
 
         if (i + 1) % 10 == 0:
             acc = (correct / scored) if scored else 0.0
@@ -2972,11 +3523,45 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-root", default=str(DEFAULT_CACHE_ROOT), help="Calibration/probe cache root")
     parser.add_argument("--out", default="", help="Optional output JSON path")
 
+    # Reproducibility
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    parser.add_argument("--no-shuffle", action="store_true", help="Disable any dataset shuffling (deterministic question order)")
+
+    # Per-question feature logging (required for calibrate_router.py and McNemar tests)
+    parser.add_argument("--save-per-question", action="store_true",
+                        help="Embed per-question feature vectors (r2_q, kappa_q, ecr_q, h_final, sc_q) in output JSON")
+
+    # Router v2 controls
+    parser.add_argument("--model-params-b", type=float, default=0.0,
+                        help="Model size in billions (e.g. 3.0, 8.0, 14.0, 32.0) — used by CUREDRouterV2")
+    parser.add_argument("--router", choices=["old", "new"], default="old",
+                        help="old = original CUREDRouter; new = 5-gate CUREDRouterV2")
+    parser.add_argument("--router-config", default="",
+                        help="Path to router_thresholds.json (used with --router new)")
+    parser.add_argument("--compute-sc", action="store_true",
+                        help="Compute self-consistency (k=3 samples) for routing (models ≤14B only)")
+    parser.add_argument(
+        "--scorer-device",
+        choices=["auto", "cpu", "cuda"],
+        default="auto",
+        help="SentenceTransformer device: auto keeps scorer on CPU for 4-bit and models ≥12B params.",
+    )
+
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+
+    # Apply seed for reproducibility — required for valid McNemar pairing across runs
+    import random as _random
+    _random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
+    configure_torch_backends_for_inference()
 
     if args.openrouter_api_keys.strip():
         os.environ["OPENROUTER_API_KEYS"] = args.openrouter_api_keys.strip()
@@ -3020,8 +3605,9 @@ def main() -> None:
                 p(f"Strategy: {out['strategy']} | domain={out.get('domain')}")
             return
 
-        p("Loading sentence scorer (CPU)...")
-        scorer = SentenceTransformer(DEFAULT_SCORER, device="cpu")
+        sdev = resolve_scorer_device(str(args.scorer_device), False, 0.0)
+        p(f"Loading sentence scorer ({sdev})...")
+        scorer = SentenceTransformer(DEFAULT_SCORER, device=sdev)
 
         benchmark_data: dict[str, list[dict[str, Any]]] = {}
         if args.benchmark in ("both", "truthfulqa"):
@@ -3128,8 +3714,9 @@ def main() -> None:
     arch = get_arch(model)
     p(f"Architecture: {arch}")
 
-    p("Loading sentence scorer (CPU)...")
-    scorer = SentenceTransformer(DEFAULT_SCORER, device="cpu")
+    sdev = resolve_scorer_device(str(args.scorer_device), bool(args.load_in_4bit), float(args.model_params_b))
+    p(f"Loading sentence scorer ({sdev})...")
+    scorer = SentenceTransformer(DEFAULT_SCORER, device=sdev)
 
     cal_path = model_cache / "calibration.json"
     if cal_path.exists() and not args.force_recalibrate:
@@ -3187,6 +3774,25 @@ def main() -> None:
         f"ITI={'ON' if router.iti_available else 'OFF'} d2H={router.d2h_threshold:.4f}"
     )
 
+    # Select active router for the "cured" protocol
+    if args.router == "new":
+        thresholds: dict[str, Any] = {}
+        if args.router_config and Path(args.router_config).exists():
+            thresholds = json.loads(Path(args.router_config).read_text(encoding="utf-8"))
+        _cured_router: Any = CUREDRouterV2(
+            model=model,
+            tokenizer=tokenizer,
+            arch=arch,
+            model_params_B=args.model_params_b,
+            top_heads=top_heads,
+            head_vectors=head_vectors,
+            thresholds=thresholds,
+            compute_sc=args.compute_sc,
+        )
+        p(f"Using CUREDRouterV2 (params_B={args.model_params_b}, compute_sc={args.compute_sc})")
+    else:
+        _cured_router = router
+
     if args.question.strip():
         question = args.question.strip()
         out = router.route(question, max_new_tokens=args.max_new_tokens, scoring=str(args.scoring))
@@ -3227,7 +3833,7 @@ def main() -> None:
                 model=model,
                 tokenizer=tokenizer,
                 arch=arch,
-                router=router,
+                router=_cured_router,
                 scorer=scorer,
                 protocol=protocol,
                 samples=samples,
@@ -3236,6 +3842,9 @@ def main() -> None:
                 max_new_tokens=int(args.max_new_tokens),
                 selfcheck_k=int(args.selfcheck_k),
                 iti_probes=(top_heads, head_vectors),
+                save_per_question=bool(args.save_per_question),
+                load_in_4bit=bool(args.load_in_4bit),
+                model_params_b=float(args.model_params_b),
             )
             all_results[bench][protocol] = result
             acc = result["accuracy"]
@@ -3253,6 +3862,9 @@ def main() -> None:
         "protocols": protocols,
         "benchmark": args.benchmark,
         "n_target": int(args.n),
+        "seed": int(args.seed),
+        "router_version": str(args.router),
+        "model_params_b": float(args.model_params_b),
         "max_new_tokens": int(args.max_new_tokens),
         "cosine_threshold": float(args.cosine_threshold),
         "scoring": str(args.scoring),
@@ -3271,9 +3883,11 @@ def main() -> None:
         per_question_log[bench] = {}
         for protocol, result in proto_map.items():
             compact = dict(result)
-            compact.pop("per_question", None)
+            pq_data = compact.pop("per_question", [])
+            if args.save_per_question:
+                compact["per_question"] = pq_data
             payload["results"][bench][protocol] = compact
-            per_question_log[bench][protocol] = result.get("per_question", [])
+            per_question_log[bench][protocol] = pq_data
 
     ts = int(time.time())
     summary_out = Path(args.out) if args.out else (model_cache / f"results_{ts}.json")
