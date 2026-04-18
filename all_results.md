@@ -113,11 +113,11 @@ _p_chi2: chi-square statistic p-value without continuity correction._
 | results/CANONICAL_v2/ablation_3b_iti_medhallu_n200.json | eval-dict | meta-llama/Llama-3.2-3B-Instruct | medhallu | iti | cosine | 200 | 53.0% | 0.0% | 200 | 6.69 | Parsed from results dictionary |
 | results/CANONICAL_v2/ablation_3b_iti_truthfulqa_n200.json | eval-dict | meta-llama/Llama-3.2-3B-Instruct | truthfulqa | iti | cosine | 200 | 56.5% | 0.0% | 200 | 6.00 | Parsed from results dictionary |
 | results/CANONICAL_v2/ablation_8b_alta_medhallu_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | medhallu | alta | cosine | 200 | 59.8% | 0.5% | 199 | 16.88 | Parsed from results dictionary |
-| results/CANONICAL_v2/ablation_8b_alta_truthfulqa_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | alta | cosine | 200 | 59.3% | 0.5% | 199 | 15.93 | Parsed from results dictionary |
+| results/CANONICAL_v2/ablation_8b_alta_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | alta | cosine | 200 | 60.6% | 0.0% | 198 | 24.94 |
 | results/CANONICAL_v2/ablation_8b_cove_medhallu_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | medhallu | cove | cosine | 200 | 42.4% | 1.0% | 198 | 24.40 | Parsed from results dictionary |
 | results/CANONICAL_v2/ablation_8b_cove_truthfulqa_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | cove | cosine | 200 | 39.2% | 0.5% | 199 | 23.80 | Parsed from results dictionary |
 | results/CANONICAL_v2/ablation_8b_greedy_medhallu_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | medhallu | greedy | cosine | 200 | 45.5% | 0.0% | 200 | 4.99 | Parsed from results dictionary |
-| results/CANONICAL_v2/ablation_8b_greedy_truthfulqa_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | greedy | cosine | 200 | 43.2% | 0.5% | 199 | 4.82 | Parsed from results dictionary |
+| results/CANONICAL_v2/ablation_8b_greedy_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | greedy | cosine | 200 | 48.0% | 0.0% | 200 | 15.3 |
 | results/CANONICAL_v2/ablation_8b_iti_medhallu_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | medhallu | iti | cosine | 200 | 61.1% | 1.0% | 198 | 7.61 | Parsed from results dictionary |
 | results/CANONICAL_v2/ablation_8b_iti_truthfulqa_n200.json | eval-dict | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | iti | cosine | 200 | 57.5% | 0.0% | 200 | 6.90 | Parsed from results dictionary |
 | results/CANONICAL_v2/main_cured_14b_medhallu_n500.json | eval-dict | Qwen/Qwen2.5-14B-Instruct | medhallu | cured | cosine | 500 | 53.4% | 0.0% | 500 | 73.88 | Parsed from results dictionary |
@@ -376,11 +376,11 @@ These tables list every protocol row extracted from each JSON, useful for debugg
 | results/CANONICAL_v2/ablation_3b_iti_medhallu_n200.json | meta-llama/Llama-3.2-3B-Instruct | medhallu | iti | cosine | 200 | 53.0% | 0.0% | 200 | 6.69 |
 | results/CANONICAL_v2/ablation_3b_iti_truthfulqa_n200.json | meta-llama/Llama-3.2-3B-Instruct | truthfulqa | iti | cosine | 200 | 56.5% | 0.0% | 200 | 6.00 |
 | results/CANONICAL_v2/ablation_8b_alta_medhallu_n200.json | meta-llama/Llama-3.1-8B-Instruct | medhallu | alta | cosine | 200 | 59.8% | 0.5% | 199 | 16.88 |
-| results/CANONICAL_v2/ablation_8b_alta_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | alta | cosine | 200 | 59.3% | 0.5% | 199 | 15.93 |
+| results/CANONICAL_v2/ablation_8b_alta_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | alta | cosine | 200 | 60.6% | 0.0% | 198 | 24.94 |
 | results/CANONICAL_v2/ablation_8b_cove_medhallu_n200.json | meta-llama/Llama-3.1-8B-Instruct | medhallu | cove | cosine | 200 | 42.4% | 1.0% | 198 | 24.40 |
 | results/CANONICAL_v2/ablation_8b_cove_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | cove | cosine | 200 | 39.2% | 0.5% | 199 | 23.80 |
 | results/CANONICAL_v2/ablation_8b_greedy_medhallu_n200.json | meta-llama/Llama-3.1-8B-Instruct | medhallu | greedy | cosine | 200 | 45.5% | 0.0% | 200 | 4.99 |
-| results/CANONICAL_v2/ablation_8b_greedy_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | greedy | cosine | 200 | 43.2% | 0.5% | 199 | 4.82 |
+| results/CANONICAL_v2/ablation_8b_greedy_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | greedy | cosine | 200 | 48.0% | 0.0% | 200 | 15.3 |
 | results/CANONICAL_v2/ablation_8b_iti_medhallu_n200.json | meta-llama/Llama-3.1-8B-Instruct | medhallu | iti | cosine | 200 | 61.1% | 1.0% | 198 | 7.61 |
 | results/CANONICAL_v2/ablation_8b_iti_truthfulqa_n200.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | iti | cosine | 200 | 57.5% | 0.0% | 200 | 6.90 |
 
@@ -405,6 +405,64 @@ These tables list every protocol row extracted from each JSON, useful for debugg
 | results/CANONICAL_v2/main_greedy_32b_truthfulqa_n817.json | Qwen/Qwen2.5-32B-Instruct | truthfulqa | greedy | cosine | 817 | 58.8% | 0.7% | 811 | 117.70 |
 | results/CANONICAL_v2/main_greedy_3b_truthfulqa_n817.json | meta-llama/Llama-3.2-3B-Instruct | truthfulqa | greedy | cosine | 817 | 50.1% | 0.1% | 816 | 5.16 |
 | results/CANONICAL_v2/main_greedy_8b_truthfulqa_n817.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | greedy | cosine | 817 | 49.6% | 0.2% | 815 | 11.23 |
+
+## Canonical v2 — Phase 4 v2 Runs with Fixed Router (`main_cured_*_v2.json`)
+
+| file | model | benchmark | protocol | scoring | n | acc | rep | n_scored | runtime_min |
+|---|---|---|---|---|---|---|---|---|---|
+| results/CANONICAL_v2/main_cured_3b_medhallu_n500_v2.json | meta-llama/Llama-3.2-3B-Instruct | medhallu | cured | cosine | 500 | 49.9% | 0.0% | 499 | 52.44 |
+| results/CANONICAL_v2/main_cured_3b_strategyqa_n500_v2.json | meta-llama/Llama-3.2-3B-Instruct | custom | cured | yesno | 500 | 62.4% | 0.0% | 500 | 3.62 |
+| results/CANONICAL_v2/main_cured_3b_truthfulqa_n500_v2.json | meta-llama/Llama-3.2-3B-Instruct | truthfulqa | cured | cosine | 500 | 60.6% | 0.0% | 497 | 54.36 |
+| results/CANONICAL_v2/main_cured_8b_medhallu_n500_v2.json | meta-llama/Llama-3.1-8B-Instruct | medhallu | cured | cosine | 500 | 50.2% | 0.0% | 500 | 54.79 |
+| results/CANONICAL_v2/main_cured_8b_strategyqa_n500_v2.json | meta-llama/Llama-3.1-8B-Instruct | custom | cured | yesno | 500 | 72.2% | 0.0% | 500 | 4.65 |
+| results/CANONICAL_v2/main_cured_8b_truthfulqa_n500_v2.json | meta-llama/Llama-3.1-8B-Instruct | truthfulqa | cured | cosine | 500 | 60.2% | 0.0% | 498 | 65.87 |
+
+
+<!-- A800_CANONICAL_SYNC -->
+
+## Canonical v2 — A800 pipeline outputs (synced)!
+
+_Pulled from A800 `results/CANONICAL_v2/` — includes FACTOR, semantic-entropy ablation, final statistics, and refreshed 8B TruthfulQA ablations (save-per-question + r2_q)._
+
+### FACTOR (8B, letter, max_new_tokens=5)!
+
+| file | model | benchmark | protocol | scoring | n | acc | rep | n_scored | runtime_min |
+|---|---|---|---|---|---|---|---|---|---|
+| results/CANONICAL_v2/results_8b_factor_news_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | greedy | letter | 200 | 59.0% | 0.0% | 200 | 1.39 |
+| results/CANONICAL_v2/results_8b_factor_news_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | alta | letter | 200 | 69.0% | 0.0% | 200 | 1.99 |
+| results/CANONICAL_v2/results_8b_factor_news_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | cured | letter | 200 | 61.5% | 0.0% | 200 | 1.57 |
+| results/CANONICAL_v2/results_8b_factor_wiki_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | greedy | letter | 200 | 29.0% | 0.0% | 200 | 1.7 |
+| results/CANONICAL_v2/results_8b_factor_wiki_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | alta | letter | 200 | 64.0% | 0.0% | 200 | 2.25 |
+| results/CANONICAL_v2/results_8b_factor_wiki_n200.json | meta-llama/Llama-3.1-8B-Instruct | custom | cured | letter | 200 | 43.0% | 0.0% | 200 | 1.89 |
+
+### Semantic entropy vs ECR gate (8B, MedHallu)!
+
+| Field | Value |
+|---|---|
+| model | `meta-llama/Llama-3.1-8B-Instruct` |
+| benchmark | medhallu |
+| n | 50 |
+| k (stochastic) | 5 |
+| greedy_accuracy | 0.34 |
+| ecr_based_accuracy | 0.34 |
+| se_based_accuracy | 0.44 |
+| ecr_gain_pp | 0.0 |
+| se_gain_pp | 10.0 |
+| ecr_cove_rate | 0.0 |
+| se_cove_rate | 0.9 |
+| file | `results/CANONICAL_v2/semantic_entropy_gate_comparison.json` |
+
+### Final paired statistics!
+
+- **File:** `results/CANONICAL_v2/statistics_table.json`
+- **Size:** 3317 bytes
+
+### R² stratified analysis!
+
+- **File:** `results/CANONICAL_v2/r2_stratified_analysis.json`
+- **Size:** 784 bytes
+
+<!-- /A800_CANONICAL_SYNC -->
 
 ## Provider / API runs (non-canonical eval dicts)
 

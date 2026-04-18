@@ -32,19 +32,33 @@ PASS = "ra7ye9ka"
 LOCAL_ROOT = Path(__file__).resolve().parents[1]
 # (local_path, remote_path_relative_to_repo_root)
 FILES_TO_SYNC = [
+    # Core scripts
     ("cured.py", "cured.py"),
     ("calibrate_router.py", "calibrate_router.py"),
     ("compute_final_stats.py", "compute_final_stats.py"),
+    # Configs (with fixed tau_kappa=0.70, tau_ECR=0.04, profile_mean_r2=0.582)
     ("configs/router_thresholds.json", "configs/router_thresholds.json"),
+    # Experiments
     ("experiments/compute_logit_linearity.py", "experiments/compute_logit_linearity.py"),
+    ("experiments/run_semantic_entropy_ablation.py", "experiments/run_semantic_entropy_ablation.py"),
+    # Benchmarks (strategyqa + FACTOR CSVs)
     ("benchmarks/strategyqa_n500.csv", "benchmarks/strategyqa_n500.csv"),
+    ("benchmarks/factor_news_n200.csv", "benchmarks/factor_news_n200.csv"),
+    ("benchmarks/factor_wiki_n200.csv", "benchmarks/factor_wiki_n200.csv"),
+    # Scripts
+    ("scripts/prep_factor_benchmark.py", "scripts/prep_factor_benchmark.py"),
     ("scripts/autodl/run_phase1_measurement.sh", "scripts/autodl/run_phase1_measurement.sh"),
     ("scripts/autodl/run_phase2_ablations.sh",   "scripts/autodl/run_phase2_ablations.sh"),
     ("scripts/autodl/run_phase4_main.sh",         "scripts/autodl/run_phase4_main.sh"),
+    ("scripts/autodl/run_factor_suite.sh",        "scripts/autodl/run_factor_suite.sh"),
+    ("scripts/autodl/run_all_experiments.sh",     "scripts/autodl/run_all_experiments.sh"),
 ]
 
 
 # ── Master pipeline script ───────────────────────────────────────────────────
+# NOTE: Phase 4 CURED outputs use _v2 suffix so they always rerun with the
+# fixed router (tau_kappa=0.70, tau_ECR=0.04). Ablations overwrite old files
+# to populate r2_q in per_question entries for R²-stratified analysis.
 PIPELINE_SCRIPT = r"""#!/usr/bin/env bash
 # =============================================================================
 # run_full_pipeline.sh — Full CURED pipeline, auto-queued after current job
@@ -295,6 +309,13 @@ for MODEL_SPEC in "${MODELS_MAIN[@]}"; do
             continue
         fi
         log "  $S | cured (new router) | $BENCH → $OUT"
+        # Phase 4 CURED: use _v2 suffix so rerun always happens with fixed router
+        OUT="$CANONICAL_DIR/main_cured_${S}_${BENCH}_n500_v2.json"
+        if [ -f "$OUT" ]; then
+            log "  Skipping $S/cured/$BENCH v2 — already exists"
+            continue
+        fi
+        log "  $S | cured (fixed router v2) | $BENCH → $OUT"
         "$PYTHON" -u cured.py \
             --model "$M" $LOAD4BIT \
             --model-params-b "$P" \
@@ -309,10 +330,10 @@ for MODEL_SPEC in "${MODELS_MAIN[@]}"; do
             --save-per-question \
             --skip-iti \
             --out "$OUT" \
-            2>&1 | tee "logs/main_cured_${S}_${BENCH}.log"
+            2>&1 | tee "logs/main_cured_${S}_${BENCH}_v2.log"
     done
 
-    # Greedy baseline (full 817 TruthfulQA)
+    # Greedy baseline (full 817 TruthfulQA) — skip if already exists
     OUT_GREEDY="$CANONICAL_DIR/main_greedy_${S}_truthfulqa_n817.json"
     if [ ! -f "$OUT_GREEDY" ]; then
         log "  $S | greedy | truthfulqa n=817 → $OUT_GREEDY"
@@ -330,7 +351,7 @@ for MODEL_SPEC in "${MODELS_MAIN[@]}"; do
     fi
 done
 
-# Old-router CURED ablation comparison (8B)
+# Old-router CURED ablation comparison (8B) — skip if already exists
 OUT_OLD="$CANONICAL_DIR/main_cured_old_8b_truthfulqa_n500.json"
 if [ ! -f "$OUT_OLD" ]; then
     log "  Old-router CURED ablation (8B)..."
@@ -345,11 +366,85 @@ if [ ! -f "$OUT_OLD" ]; then
         --out "$OUT_OLD" \
         2>&1 | tee logs/main_cured_old_8b.log
 fi
-log "Phase 4 complete."
+log "Phase 4 (fixed router v2) complete."
 
-# ── Phase 5: Statistics ────────────────────────────────────────────────────────
+# ── Phase 4b: R² ablations — 8B with --save-per-question (populates r2_q) ────
 log "======================================================"
-log "PHASE 5: Statistical analysis"
+log "PHASE 4b: 8B R²-stratified ablations (--save-per-question, overwrites old)"
+log "======================================================"
+# Always overwrite: old files have r2_q=None; new cured.py computes them.
+for PROTOCOL in alta greedy; do
+    for BENCH in truthfulqa medhallu; do
+        OUT="$CANONICAL_DIR/ablation_8b_${PROTOCOL}_${BENCH}_n200.json"
+        log "  8b | $PROTOCOL | $BENCH (force rerun for r2_q) → $OUT"
+        "$PYTHON" -u cured.py \
+            --model "meta-llama/Llama-3.1-8B-Instruct" --load-in-4bit \
+            --model-params-b 8.0 \
+            --protocols "$PROTOCOL" \
+            --benchmark "$BENCH" \
+            --n 200 --seed 42 --no-shuffle \
+            --scoring cosine \
+            --save-per-question --skip-iti \
+            --out "$OUT" \
+            2>&1 | tee "logs/ablation_8b_${PROTOCOL}_${BENCH}_r2.log"
+    done
+done
+log "Phase 4b complete."
+
+# ── Phase 4c: FACTOR benchmark ────────────────────────────────────────────────
+log "======================================================"
+log "PHASE 4c: FACTOR benchmark (news + wiki, 8B)"
+log "======================================================"
+for SUBSET in news wiki; do
+    CSV="benchmarks/factor_${SUBSET}_n200.csv"
+    if [ ! -f "$CSV" ]; then
+        log "  Downloading FACTOR $SUBSET..."
+        "$PYTHON" scripts/prep_factor_benchmark.py || log "  WARN: FACTOR prep failed"
+    fi
+    OUT="$CANONICAL_DIR/results_8b_factor_${SUBSET}_n200.json"
+    if [ -f "$OUT" ]; then
+        log "  Skipping FACTOR $SUBSET — already exists"
+        continue
+    fi
+    log "  FACTOR $SUBSET → $OUT"
+    "$PYTHON" -u cured.py \
+        --model "meta-llama/Llama-3.1-8B-Instruct" --load-in-4bit \
+        --skip-iti \
+        --protocols greedy,alta,cured \
+        --router new --router-config configs/router_thresholds.json \
+        --benchmark custom \
+        --custom-csv "$CSV" \
+        --question-col question --answer-col answer \
+        --n 200 --seed 42 --no-shuffle \
+        --scoring letter --max-new-tokens 5 \
+        --save-per-question \
+        --out "$OUT" \
+        2>&1 | tee "logs/8b_factor_${SUBSET}.log"
+    log "  Done: FACTOR $SUBSET"
+done
+log "Phase 4c complete."
+
+# ── Phase 4d: Semantic entropy ablation ───────────────────────────────────────
+log "======================================================"
+log "PHASE 4d: Semantic entropy ablation (MedHallu, n=50, k=5)"
+log "======================================================"
+SE_OUT="$CANONICAL_DIR/semantic_entropy_gate_comparison.json"
+if [ ! -f "$SE_OUT" ]; then
+    "$PYTHON" -u experiments/run_semantic_entropy_ablation.py \
+        --model "meta-llama/Llama-3.1-8B-Instruct" --load-in-4bit \
+        --benchmark medhallu \
+        --n 50 --k 5 --seed 42 \
+        --out "$SE_OUT" \
+        2>&1 | tee logs/semantic_entropy.log || log "  WARN: Semantic entropy ablation failed"
+    log "  Semantic entropy done → $SE_OUT"
+else
+    log "  Skipping semantic entropy — already exists"
+fi
+log "Phase 4d complete."
+
+# ── Phase 5: Statistics + R²-stratified analysis ─────────────────────────────
+log "======================================================"
+log "PHASE 5: Statistical analysis + R²-stratified ALTA analysis"
 log "======================================================"
 "$PYTHON" -u compute_final_stats.py \
     --results-dir "$CANONICAL_DIR" \
@@ -361,9 +456,9 @@ log "======================================================"
 log "ALL PHASES COMPLETE"
 log "Summary files in: $CANONICAL_DIR"
 log "Statistics:        $CANONICAL_DIR/statistics_table.json"
+log "R² stratified:     $CANONICAL_DIR/r2_stratified_analysis.json"
 log "======================================================"
 
-# Send a completion notification to the log
 echo "" >> logs/pipeline.log
 echo "PIPELINE FINISHED AT $(date)" >> logs/pipeline.log
 """

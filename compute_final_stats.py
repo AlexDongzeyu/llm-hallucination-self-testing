@@ -217,6 +217,126 @@ def print_table(comparisons: list[dict]) -> None:
     print("\n".join(lines).encode("ascii", errors="replace").decode("ascii"))
 
 
+def r2_stratified_alta_analysis(results_dir: str, output_path: str) -> dict:
+    """For each question with saved per-question features (from --save-per-question),
+    correlate R2_q with ALTA accuracy gain over greedy.
+
+    Requires ablation_{scale}_alta_{bench}_n200.json and
+    ablation_{scale}_greedy_{bench}_n200.json both run with
+    --save-per-question --router new.
+
+    Returns dict of statistics; also writes r2_stratified_analysis.json.
+    """
+    import pandas as pd
+    from scipy import stats as scipy_stats
+
+    results_path = Path(results_dir)
+    records = []
+
+    def get_pq(data: dict) -> list:
+        if "per_question" in data:
+            return data["per_question"]
+        for bv in data.get("results", {}).values():
+            for pv in bv.values():
+                if isinstance(pv, dict) and "per_question" in pv:
+                    return pv["per_question"]
+        return []
+
+    for scale in ["3b", "8b", "14b", "32b"]:
+        for bench in ["truthfulqa", "medhallu"]:
+            alta_f = results_path / f"ablation_{scale}_alta_{bench}_n200.json"
+            greedy_f = results_path / f"ablation_{scale}_greedy_{bench}_n200.json"
+            if not alta_f.exists() or not greedy_f.exists():
+                print(f"  Missing: {scale} {bench} ablation files")
+                continue
+
+            with open(alta_f) as f:
+                alta_data = json.load(f)
+            with open(greedy_f) as f:
+                greedy_data = json.load(f)
+
+            alta_pq = {q.get("q_id", q.get("i")): q for q in get_pq(alta_data)}
+            greedy_pq = {q.get("q_id", q.get("i")): q for q in get_pq(greedy_data)}
+
+            common_ids = set(alta_pq) & set(greedy_pq)
+            if not common_ids:
+                print(
+                    f"  No overlapping q_ids for {scale} {bench}. "
+                    "Re-run ablations with --save-per-question --seed 42 --no-shuffle."
+                )
+                continue
+
+            for qid in common_ids:
+                a = alta_pq[qid]
+                g = greedy_pq[qid]
+                r2_q = a.get("r2_q")
+                if r2_q is None:
+                    continue
+                records.append({
+                    "scale": scale,
+                    "benchmark": bench,
+                    "q_id": qid,
+                    "r2_q": float(r2_q),
+                    "kappa_q": float(a.get("kappa_q") or 0),
+                    "ecr_q": float(a.get("ecr_q") or 0),
+                    "h_final": float(a.get("h_final") or 0),
+                    "alta_correct": int(a.get("correct") or 0),
+                    "greedy_correct": int(g.get("correct") or 0),
+                })
+
+    if not records:
+        msg = (
+            "No per-question feature data found. "
+            "Re-run ablations with --save-per-question."
+        )
+        print(f"  WARNING: {msg}")
+        return {"error": msg}
+
+    df = pd.DataFrame(records)
+    df["alta_gain"] = df["alta_correct"] - df["greedy_correct"]
+
+    results_out: dict = {}
+
+    print("\n=== R² vs ALTA Accuracy (per-question, within scale) ===")
+    for scale in sorted(df["scale"].unique()):
+        sub = df[df["scale"] == scale]
+        r, p = scipy_stats.pearsonr(sub["r2_q"], sub["alta_correct"])
+        results_out[f"pearson_r_scale_{scale}"] = round(r, 4)
+        results_out[f"pearson_p_scale_{scale}"] = round(p, 4)
+        print(f"  {scale}: r={r:.3f}, p={p:.4f}, n={len(sub)}")
+
+    df["r2_quartile"] = pd.qcut(
+        df["r2_q"], q=4, labels=["Q1 (R²<p25)", "Q2", "Q3", "Q4 (R²>p75)"]
+    )
+    q_stats = (
+        df.groupby("r2_quartile")
+        .agg(
+            n=("r2_q", "count"),
+            r2_mean=("r2_q", "mean"),
+            alta_acc=("alta_correct", "mean"),
+            greedy_acc=("greedy_correct", "mean"),
+            mean_gain=("alta_gain", "mean"),
+        )
+        .round(4)
+    )
+    print("\n=== Quartile Analysis (pooled) ===")
+    print(q_stats.to_string())
+    results_out["quartile_analysis"] = q_stats.to_dict()
+
+    r_pb, p_pb = scipy_stats.pointbiserialr(df["alta_correct"], df["r2_q"])
+    results_out["point_biserial_r2_vs_alta_correct"] = round(r_pb, 4)
+    results_out["point_biserial_p"] = round(p_pb, 6)
+    print(
+        f"\nPoint-biserial r(R2_q, alta_correct) = {r_pb:.4f}, p={p_pb:.6f}"
+        "\n(Positive = higher R² → more likely ALTA is correct)"
+    )
+
+    out = Path(output_path).parent / "r2_stratified_analysis.json"
+    out.write_text(json.dumps(results_out, indent=2, default=str), encoding="utf-8")
+    print(f"\nSaved: {out}")
+    return results_out
+
+
 def main() -> None:
     args = parse_args()
 
@@ -271,6 +391,9 @@ def main() -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(comparisons, indent=2), encoding="utf-8")
     print(f"Saved statistics -> {out_path}")
+
+    print("\n=== R² Stratified ALTA Analysis ===")
+    r2_stratified_alta_analysis(args.results_dir, args.output)
 
 
 if __name__ == "__main__":

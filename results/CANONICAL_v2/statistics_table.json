@@ -3,7 +3,7 @@
     "label": "greedy vs CURED | 14b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "results\\CANONICAL_v2\\main_greedy_14b_truthfulqa_n817.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_14b_truthfulqa_n817.json",
       "accuracy": 0.636,
       "ci_95": [
         0.594,
@@ -11,7 +11,7 @@
       ]
     },
     "method": {
-      "file": "results\\CANONICAL_v2\\main_cured_14b_truthfulqa_n500.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_14b_truthfulqa_n500.json",
       "accuracy": 0.64,
       "ci_95": [
         0.598,
@@ -36,7 +36,7 @@
     "label": "greedy vs CURED | 32b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "results\\CANONICAL_v2\\main_greedy_32b_truthfulqa_n817.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_32b_truthfulqa_n817.json",
       "accuracy": 0.598,
       "ci_95": [
         0.554,
@@ -44,7 +44,7 @@
       ]
     },
     "method": {
-      "file": "results\\CANONICAL_v2\\main_cured_32b_truthfulqa_n500.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_32b_truthfulqa_n500.json",
       "accuracy": 0.596,
       "ci_95": [
         0.552,
@@ -69,7 +69,7 @@
     "label": "greedy vs CURED | 3b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "results\\CANONICAL_v2\\main_greedy_3b_truthfulqa_n817.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_3b_truthfulqa_n817.json",
       "accuracy": 0.518,
       "ci_95": [
         0.474,
@@ -77,7 +77,7 @@
       ]
     },
     "method": {
-      "file": "results\\CANONICAL_v2\\main_cured_3b_truthfulqa_n500.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_3b_truthfulqa_n500.json",
       "accuracy": 0.514,
       "ci_95": [
         0.47,
@@ -102,7 +102,7 @@
     "label": "greedy vs CURED | 8b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "results\\CANONICAL_v2\\main_greedy_8b_truthfulqa_n817.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_8b_truthfulqa_n817.json",
       "accuracy": 0.482,
       "ci_95": [
         0.44,
@@ -110,7 +110,7 @@
       ]
     },
     "method": {
-      "file": "results\\CANONICAL_v2\\main_cured_8b_truthfulqa_n500.json",
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_8b_truthfulqa_n500.json",
       "accuracy": 0.496,
       "ci_95": [
         0.452,

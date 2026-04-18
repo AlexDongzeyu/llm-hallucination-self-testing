@@ -1,19 +1,50 @@
 #!/usr/bin/env python3
 """
 CURED: Complete Unified Routing and Evaluation for Decoding
+===========================================================
 
-Single-file script for multi-model hallucination mitigation experiments.
+Single-file script and importable module for multi-model hallucination
+mitigation experiments.  See the ``cured/`` package for the organized
+Python API surface.
 
-Features:
+Architecture Overview
+---------------------
+CURED implements a 5-gate principled router that selects a decoding
+strategy per question using three trajectory features:
+
+  R²   — mean R² of late-layer logit growth (measures ALTA viability)
+  κ    — quadratic gain fraction (curvature of logit trajectory)
+  ECR  — Entropy Compression Ratio: H_final / H_peak
+
+Gate flow (CUREDRouterV2):
+  Gate 1  H_final ≤ τ_H_easy (1.0)   →  greedy_confident
+  Scale   model R² ≥ 0.55, not med   →  alta_global_viable
+  Gate 2  κ ≥ τ_κ (0.70) & ECR ≤ τ_E (0.04)  →  alta_gate2
+  Gate 3  medical + ITI available    →  iti_medical_gate3
+  Gate 4  H_final ≥ τ_H_hard (3.5) & R² ≥ τ_R2  →  alta_gate4
+  Gate 5  medical + SC > 0.5         →  cove_gate5_medical
+          else                       →  greedy_gate5
+
+5-Phase Experiment Pipeline
+---------------------------
+  Phase 1  Measure logit linearity R² per model (compute_logit_linearity.py)
+  Phase 2  Protocol ablations: greedy / ALTA / CoVe / ITI  (run_phase2_ablations.sh)
+  Phase 3  Calibrate router thresholds  (calibrate_router.py)
+  Phase 4  Main CURED v2 evaluation n=500  (run_all_experiments.sh)
+  Phase 5  Statistics + R²-stratified analysis  (compute_final_stats.py)
+
+Features
+--------
 - Loads HuggingFace causal LMs (Llama/Mistral/Qwen/Gemma/GPT-like families)
 - Runs standalone protocols: greedy, ALTA, DeLTa+DoLa, CoVe, ITI, SelfCheck
-- Runs CURED router that routes per question by domain + entropy curvature d2H
-- Calibrates model-specific R2 and d2H thresholds (cached per model)
-- Evaluates on TruthfulQA, MedHallu, or custom CSV
-- Saves compact summary and per-question logs
+- Runs CURED router (v1 d2H-based; v2 trajectory-feature-based)
+- Calibrates model-specific R², d2H, ECR thresholds (cached per model)
+- Evaluates on TruthfulQA, MedHallu, StrategyQA, or custom CSV
+- Saves compact summary and per-question logs with routing decisions
 
-Example:
-  python cured.py --model meta-llama/Llama-3.2-3B-Instruct --benchmark both --n 50 \
+Example
+-------
+  python cured.py --model meta-llama/Llama-3.2-3B-Instruct --benchmark both --n 50 \\
       --protocols greedy,alta,cove,cured --skip-iti
 """
 
@@ -41,7 +72,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 # ---------------------------------------------------------------------------
-# Constants
+# Phase 1: Constants and defaults
 # ---------------------------------------------------------------------------
 
 ALL_PROTOCOLS = ["greedy", "alta", "delta_dola", "cove", "iti", "selfcheck", "cured"]
@@ -180,7 +211,7 @@ MED_PATTERN = re.compile(
 
 
 # ---------------------------------------------------------------------------
-# Utilities
+# Phase 1: Utilities
 # ---------------------------------------------------------------------------
 
 
@@ -475,11 +506,30 @@ def mc_score_sample(
     labels_mc2: list[int] | None = None,
     mc_protocol: str = "greedy",
 ) -> dict[str, float]:
-    """
-    TruthfulQA MC1/MC2 scoring using candidate log-likelihoods.
+    """TruthfulQA MC1/MC2 scoring using candidate log-likelihoods.
 
-    MC1: top-probability answer is correct (single-best correctness).
-    MC2: normalized probability mass assigned to all correct answers.
+    Computes MC1 (single-best answer log-prob) and MC2 (normalized probability
+    mass over all correct answers) for a multiple-choice question.
+
+    MC1: 1.0 if the highest-log-prob choice is correct, else 0.0.
+    MC2: correct_prob / (correct_prob + wrong_prob), where probabilities are
+         computed from softmax-normalised log-probs.
+
+    Args:
+        model:        HuggingFace CausalLM (already loaded, on GPU).
+        tokenizer:    Matching tokenizer.
+        question:     Question text used as the prompt prefix.
+        choices:      List of answer strings for MC1.
+        labels:       Binary label list (1=correct, 0=incorrect) for MC1.
+        choices_mc2:  Answer strings for MC2 (falls back to choices if None).
+        labels_mc2:   Binary labels for MC2 (falls back to labels if None).
+        mc_protocol:  "greedy" → standard log-probs;
+                      "alta"   → ALTA-weighted log-probs.
+
+    Returns:
+        dict:
+            "mc1" (float): 1.0 if highest-prob choice is correct, else 0.0.
+            "mc2" (float): Fraction of probability mass on correct answers.
     """
     if not choices or not labels:
         return {"mc1": 0.0, "mc2": 0.0}
@@ -1278,7 +1328,7 @@ def api_generate(
 
 
 # ---------------------------------------------------------------------------
-# Model/architecture helpers
+# Phase 1: Model/architecture helpers
 # ---------------------------------------------------------------------------
 
 
@@ -1497,7 +1547,7 @@ def compute_d2h_features(model: Any, tokenizer: Any, prompt: str) -> dict[str, f
 
 
 # ---------------------------------------------------------------------------
-# Protocol implementations
+# Phase 2: Protocol implementations (greedy, ALTA, CoVe, ITI, SelfCheck, DoLa)
 # ---------------------------------------------------------------------------
 
 
@@ -2055,7 +2105,7 @@ def selfcheck_generate(
 
 
 # ---------------------------------------------------------------------------
-# Calibration
+# Phase 3: Calibration (measure_r2, compute_ecr, train_iti_probes, calibrate_d2h)
 # ---------------------------------------------------------------------------
 
 
@@ -2121,7 +2171,7 @@ def measure_r2(model: Any, tokenizer: Any, n_questions: int = DEFAULT_R2_QUESTIO
 
 
 # ---------------------------------------------------------------------------
-# Per-question trajectory features (used by CUREDRouterV2)
+# Phase 3: Per-question trajectory features (R², κ, ECR — used by CUREDRouterV2)
 # ---------------------------------------------------------------------------
 
 
@@ -2136,7 +2186,24 @@ def _compute_layer_features(
 
     Builds the (L, vocab) logit matrix once and reuses it for both R² and κ,
     avoiding the 2× redundant GPU→CPU transfer of computing them separately.
-    Returns (r2_mean, r2_var, kappa).
+
+    R² measures linear growth of top-k token logits across the late layers.
+    κ = (R²_quad - R²_lin) / (1 - R²_lin + ε) measures curvature (quadratic gain).
+
+    Args:
+        hidden_states:     Tuple of hidden state tensors (embedding layer removed;
+                           i.e. out.hidden_states[1:]).
+        lm_head:           Language model head (linear projection to vocabulary).
+        norm:              Final layer-norm module.
+        layer_start_ratio: Fraction of layers to skip from bottom (default 0.7,
+                           i.e. only the top 30% of layers are used).
+        top_k:             Number of highest-logit tokens to compute R²/κ over.
+
+    Returns:
+        tuple(r2_mean, r2_var, kappa):
+            r2_mean (float): Mean linear R² across top_k tokens.
+            r2_var  (float): Variance of R² across top_k tokens.
+            kappa   (float): Mean quadratic gain fraction κ ∈ [0, 1].
     """
     n_layers = len(hidden_states)
     start = max(0, int(n_layers * layer_start_ratio))
@@ -2211,14 +2278,29 @@ def compute_ecr(
     lm_head: Any,
     norm: Any,
 ) -> tuple[float, float, float]:
-    """ECR = H_final / H_peak across all transformer layers.
+    """Compute the Entropy Compression Ratio (ECR) across all transformer layers.
 
-    Measures RLHF entropy compression. Low ECR → entropy gate barely fires → ALTA suppressed.
-    Measured 3B profile: H1=0.08, H7=10.83, H28=0.85 → ECR=0.078.
+    ECR = H_final / H_peak, where H_layer = -sum(p * log(p)) over the softmax
+    of layer-projected logits.  Low ECR signals that the model has compressed
+    its prediction entropy by the final layer (high confidence at output).
 
-    IMPORTANT: caller must pass hidden_states with the embedding layer already removed
-    (e.g. out.hidden_states[1:]).  hidden_states[0] here = transformer layer 1,
-    hidden_states[-1] = final transformer layer.
+    Empirical profile (3B): H1=0.08, H7=10.83 (peak), H28=0.85 → ECR=0.078.
+    Gate 2 uses: ECR < tau_ECR (0.04) → route to ALTA.
+
+    IMPORTANT: caller must pass hidden_states with the embedding layer already
+    removed (e.g. out.hidden_states[1:]).  hidden_states[0] = transformer
+    layer 1, hidden_states[-1] = final transformer layer.
+
+    Args:
+        hidden_states: Tuple of hidden state tensors (embedding layer removed).
+        lm_head:       Language model head (linear projection to vocabulary).
+        norm:          Final layer-norm module.
+
+    Returns:
+        tuple(ECR, H_final, H_peak):
+            ECR     (float): H_final / H_peak ratio.
+            H_final (float): Entropy at the final transformer layer.
+            H_peak  (float): Maximum entropy across all transformer layers.
     """
     entropies: list[float] = []
     for h in hidden_states:
@@ -2497,12 +2579,18 @@ def train_iti_probes(
 
 
 # ---------------------------------------------------------------------------
-# CURED router
+# Phase 4: CURED Router — per-question routing using trajectory features
 # ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
-# CUREDRouterV2 — 5-gate principled router
+# Phase 4: CUREDRouterV2 — 5-gate principled router
+#   Gate 1  H_final <= tau_H_easy  -> greedy_confident
+#   Scale   model R2 >= 0.55       -> alta_global_viable
+#   Gate 2  kappa >= tau_kappa and ECR <= tau_ECR  -> alta_gate2
+#   Gate 3  medical + ITI          -> iti_medical_gate3
+#   Gate 4  H_final >= tau_H_hard  -> alta_gate4
+#   Gate 5  medical + SC > 0.5     -> cove_gate5_medical  else greedy_gate5
 # ---------------------------------------------------------------------------
 
 
@@ -2545,15 +2633,78 @@ def score_cove(
     beta_H: float = 0.5,
     beta_med_penalty: float = 3.0,
 ) -> float:
-    """CoVe score ∈ [0,1]. >0.5 → route to CoVe.
+    """CoVe score ∈ [0,1]. >0.5 → route to CoVe (medical domain only).
 
     Heavy penalty for medical+large model (hallucination snowballing risk from Zhang et al. 2025).
     SC_q=None (large models) → treat as SC_q=tau_SC (neutral signal).
+
+    NOTE: _uncertainty_gate only acts on s_cove > 0.5 when domain_medical=True.
+    For non-medical domains (e.g. TruthfulQA), CoVe is disabled entirely: empirical
+    finding shows CoVe degrades general/adversarial QA by 10–18 pp at all scales.
     """
     sc_val = SC_q if SC_q is not None else tau_SC
     penalty = beta_med_penalty * domain_medical * int(model_params_B > max_medical_params)
     lc = beta_SC * (tau_SC - sc_val) + beta_H * (H_final - tau_H) - penalty
     return float(1.0 / (1.0 + np.exp(-lc)))
+
+
+def compute_semantic_entropy(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    scorer: Any,
+    k: int = 5,
+    temperature: float = 0.7,
+    max_new_tokens: int = 40,
+) -> float:
+    """Semantic entropy via response clustering (Farquhar et al., 2024).
+
+    Generates k stochastic responses, clusters them by cosine similarity
+    (threshold=0.80), and returns Shannon entropy over cluster probabilities (nats).
+
+    Higher = model genuinely uncertain about the answer.
+    Lower  = model confidently and consistently picks one answer.
+
+    Cost: k forward passes (~5x greedy latency). Use sparingly (ablations only).
+    Prerequisite: sentence-transformers scorer passed in (same as used for SC_q).
+    """
+    from collections import Counter
+
+    dev = get_model_device(model)
+    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(dev)
+    responses: list[str] = []
+
+    for _ in range(k):
+        with torch.no_grad():
+            out = model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=temperature,
+                repetition_penalty=1.3,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        text = tokenizer.decode(out[0][input_ids.shape[1]:], skip_special_tokens=True)
+        responses.append(text.strip().lower()[:60])
+
+    if not responses:
+        return 0.0
+
+    embs = scorer.encode(responses, convert_to_tensor=True)
+    cluster_id = [-1] * k
+    next_cluster = 0
+    for i in range(k):
+        if cluster_id[i] == -1:
+            cluster_id[i] = next_cluster
+            for j in range(i + 1, k):
+                if float(util.cos_sim(embs[i], embs[j]).item()) >= 0.80:
+                    cluster_id[j] = next_cluster
+            next_cluster += 1
+
+    counts = Counter(cluster_id)
+    total = sum(counts.values())
+    H_sem = -sum((c / total) * np.log(c / total + 1e-10) for c in counts.values())
+    return float(H_sem)
 
 
 class CUREDRouterV2:
@@ -2587,8 +2738,8 @@ class CUREDRouterV2:
         self.iti_available = top_heads is not None and head_vectors is not None
 
         self.tau_R2 = float(thresholds.get("tau_R2", 0.65))
-        self.tau_kappa = float(thresholds.get("tau_kappa", 0.08))
-        self.tau_ECR = float(thresholds.get("tau_ECR", 0.10))
+        self.tau_kappa = float(thresholds.get("tau_kappa", 0.70))   # was 0.08; mean kappa=0.597@8B
+        self.tau_ECR = float(thresholds.get("tau_ECR", 0.04))       # was 0.10; mean ECR=0.031–0.076
         self.tau_H_easy = float(thresholds.get("tau_H_easy", 0.5))
         self.tau_H_hard = float(thresholds.get("tau_H_hard", 3.0))
         self.tau_SC_easy = float(thresholds.get("tau_SC_easy", 0.90))
@@ -2597,6 +2748,11 @@ class CUREDRouterV2:
         self.beta2 = float(thresholds.get("beta2", 0.5))
         self.beta3 = float(thresholds.get("beta3", 5.0))
         self.beta4 = float(thresholds.get("beta4", 2.0))
+        # Model-level R² from profiling (profile_*.json). When ≥0.55, ALTA is
+        # globally beneficial at this scale → bypass per-question gating for
+        # general-domain, matching the robust behavior of the old CUREDRouter.
+        self.profile_mean_r2 = float(thresholds.get("profile_mean_r2", 0.0))
+        self.alta_globally_viable = self.profile_mean_r2 >= 0.55
 
     def _features(self, prompt: str) -> tuple[float, float, float, float, float, float | None]:
         dev = get_model_device(self.model)
@@ -2651,6 +2807,21 @@ class CUREDRouterV2:
             return {
                 "text": greedy_generate(self.model, self.tokenizer, prompt, max_new_tokens),
                 "strategy": "greedy_confident",
+                "domain": domain,
+                **routing_log,
+            }
+
+        # ── Scale-aware shortcut (between Gate 1 and Gate 2) ─────────────
+        # When model-level R² ≥ 0.55, ALTA is globally beneficial at this scale.
+        # Bypass per-question Gate 2 gating for general-domain non-trivial questions,
+        # replicating the robust behavior of the old CUREDRouter while retaining the
+        # full 5-gate logic for medical domain and easy questions.
+        if self.alta_globally_viable and not domain_medical and H_final > self.tau_H_easy:
+            routing_log["gate"] = "2s"
+            out = alta_generate(self.model, self.tokenizer, prompt, max_new_tokens)
+            return {
+                "text": out["text"],
+                "strategy": "alta_global_viable",
                 "domain": domain,
                 **routing_log,
             }
@@ -2716,15 +2887,19 @@ class CUREDRouterV2:
                             tau_SC=self.tau_SC_hard, tau_H=self.tau_H_hard)
         routing_log["S_CoVe"] = round(s_cove, 4)
         routing_log["gate"] = 5
-        if s_cove > 0.5:
+        # CoVe only for medical: on general/adversarial QA (TruthfulQA) it consistently
+        # degrades performance at all scales by reinforcing the model's initial misconception.
+        # Empirical finding: CoVe -10pp on TruthfulQA, +3–6pp on MedHallu.
+        if s_cove > 0.5 and domain_medical:
             text = cove_generate(self.model, self.tokenizer, question, max_new_tokens)
-            return {"text": text, "strategy": "cove_gate5", "domain": domain, **routing_log}
+            return {"text": text, "strategy": "cove_gate5_medical", "domain": domain, **routing_log}
         text = greedy_generate(self.model, self.tokenizer, prompt, max_new_tokens)
         return {"text": text, "strategy": "greedy_gate5", "domain": domain, **routing_log}
 
 
 # ---------------------------------------------------------------------------
-# CUREDRouter — original router (kept for --router old backward compatibility)
+# Phase 4: CUREDRouter — legacy d2H-based router (--router old)
+#   Kept for backwards compatibility and comparison experiments.
 # ---------------------------------------------------------------------------
 
 
@@ -2831,7 +3006,7 @@ class CUREDRouter:
 
 
 # ---------------------------------------------------------------------------
-# Benchmarks
+# Phase 4: Benchmark loaders (TruthfulQA, MedHallu, custom CSV)
 # ---------------------------------------------------------------------------
 
 
@@ -2931,7 +3106,7 @@ def load_custom_csv(
 
 
 # ---------------------------------------------------------------------------
-# Evaluation
+# Phase 4: Evaluation loop (run_protocol, run_api_protocol, result serialisation)
 # ---------------------------------------------------------------------------
 
 
@@ -3048,6 +3223,29 @@ def run_protocol(
 
         else:
             raise ValueError(f"Unknown protocol: {protocol}")
+
+        # When saving per-question data for non-cured protocols, compute routing
+        # features (r2_q, kappa_q, ECR_q, H_final) via one extra forward pass.
+        # Required for R²-stratified analysis in compute_final_stats.py.
+        if save_per_question and protocol != "cured" and "r2_q" not in extra:
+            try:
+                _dev = get_model_device(model)
+                _ids = tokenizer.encode(prompt, return_tensors="pt").to(_dev)
+                with torch.no_grad():
+                    _fwd = model(_ids, output_hidden_states=True, use_cache=False)
+                _hs = _fwd.hidden_states[1:]
+                _norm, _lm_head = get_final_norm_and_lm_head(model)
+                _r2_q, _var_r2_q, _kappa_q = _compute_layer_features(_hs, _lm_head, _norm)
+                _ECR_q, _H_final, _ = compute_ecr(_hs, _lm_head, _norm)
+                extra.update({
+                    "r2_q": round(float(_r2_q), 4),
+                    "var_r2_q": round(float(_var_r2_q), 4),
+                    "kappa_q": round(float(_kappa_q), 4),
+                    "ECR_q": round(float(_ECR_q), 4),
+                    "H_final": round(float(_H_final), 4),
+                })
+            except Exception:
+                pass  # degrade gracefully; r2_q stays None
 
         by_strategy[strategy] = by_strategy.get(strategy, 0) + 1
 
@@ -3424,7 +3622,7 @@ def print_api_results_table(api_mode: str, api_model: str, all_results: dict[str
 
 
 # ---------------------------------------------------------------------------
-# Main
+# Phase 5: CLI entry point (parse_args, main)
 # ---------------------------------------------------------------------------
 
 

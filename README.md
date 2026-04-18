@@ -1,125 +1,231 @@
-# CURED: Curvature-Informed Routing and Entropy-based Decoding
+# CURED: Complete Unified Routing and Evaluation for Decoding
 
-Inference-time hallucination mitigation experiments for RLHF-tuned LLMs.
+> **TL;DR** — CURED is a principled 5-gate router that selects greedy,
+> ALTA, CoVe, or ITI decoding **per question** using three lightweight
+> trajectory features (R², κ, ECR) extracted from a single forward pass,
+> reducing hallucinations without the compute overhead of always-on techniques.
 
-## Repository Layout
+---
+
+## Key Results
+
+| Model | Benchmark | Greedy | CURED v2 | Δ |
+|---|---|---|---|---|
+| Llama-3.2-3B | TruthfulQA | 50.1% | **60.6%** | +10.5pp |
+| Llama-3.1-8B | TruthfulQA | 49.6% | **60.2%** | +10.6pp |
+| Llama-3.1-8B | StrategyQA | — | **72.2%** | — |
+| Qwen-14B | TruthfulQA | 62.2% | **64.0%** | +1.8pp |
+
+Full result table: [RESULTS.md](RESULTS.md)
+
+---
+
+## Repository Structure
 
 ```
-LLM_Hallucination/
+cured-decoding-router/
 │
-├── cured.py                  ← MAIN SCRIPT: run all protocols/benchmarks here
-├── calibrate_router.py       ← Phase 3: learn routing thresholds from ablations
-├── compute_final_stats.py    ← Phase 5: McNemar tests + bootstrap CI
-├── requirements.txt
-├── README.md
-├── all_results.md            ← aggregated results narrative
+├── cured/                     ← Python package (importable API)
+│   ├── __init__.py
+│   ├── router.py              ← CUREDRouterV2, CUREDRouter, CUREDAPIRouter
+│   ├── protocols.py           ← greedy, ALTA, CoVe, ITI, SelfCheck, DoLa
+│   ├── scoring.py             ← cosine, letter, yesno, mc_score_sample
+│   └── calibration.py        ← measure_r2, compute_ecr, train_iti_probes
 │
-├── configs/
-│   └── router_thresholds.json   ← router tau/beta values (updated by calibrate_router.py)
+├── cured.py                   ← CLI entry point (imports from cured/)
+├── calibrate_router.py        ← standalone calibration script
+├── compute_final_stats.py     ← statistical analysis + R²-stratified analysis
 │
-├── benchmarks/               ← frozen benchmark CSVs (TruthfulQA, MedHallu, etc.)
-│
-├── experiments/              ← experiment scripts (sweeps, figures, profiling)
-│   ├── compute_logit_linearity.py   ← Phase 1: measure R², κ, ECR per model
-│   └── ...
-│
-├── src/                      ← reusable library modules (generation, probing, routing)
+├── experiments/               ← research experiments
+│   ├── README.md              ← Phase 1–5 pipeline documentation
+│   ├── compute_logit_linearity.py
+│   ├── run_alta_3b.py
+│   ├── generate_paper_figures.py
+│   └── run_semantic_entropy_ablation.py
 │
 ├── scripts/
-│   ├── prep_benchmarks.py    ← download/rebuild benchmark CSVs
-│   ├── deploy_and_queue.py   ← sync code + queue pipeline on remote GPU
-│   ├── check_status.py       ← check GPU / pipeline status
-│   ├── autodl/               ← GPU server shell scripts (run_phase*.sh, bootstrap)
-│   └── maintenance/          ← one-time patch and diagnostic tools (not part of main pipeline)
+│   ├── autodl/                ← GPU shell scripts (A100/A800)
+│   │   ├── run_all_experiments.sh  ← MAIN PIPELINE ENTRY POINT
+│   │   └── ...
+│   ├── prep_benchmarks.py     ← download/format benchmark CSVs
+│   ├── build_all_results_md.py ← regenerate all_results.md
+│   └── maintenance/           ← one-time tools (not part of pipeline)
 │
-├── data/                     ← ITI probes, trajectory datasets
+├── benchmarks/                ← frozen benchmark CSVs
+├── configs/
+│   └── router_thresholds.json ← all router thresholds (tau_kappa, tau_ECR, …)
+│
 ├── results/
-│   └── CANONICAL_v2/         ← SINGLE SOURCE OF TRUTH for all reportable results
-├── logs/                     ← runtime logs
-└── plots/                    ← visualization outputs
+│   ├── CANONICAL_v2/          ← SINGLE SOURCE OF TRUTH for all results
+│   ├── figures/               ← paper figures (fig1–fig5 PNG)
+│   └── archive/               ← non-canonical / debug runs
+│
+├── data/                      ← ITI probes, routing dataset
+├── paper/                     ← PDF and figure sources
+├── src/legacy/                ← early prototype code (pre-architecture)
+│
+├── README.md
+├── RESULTS.md                 ← canonical result table
+├── PAPER.md                   ← BibTeX + citation
+├── requirements.txt
+└── LICENSE                    ← MIT
 ```
 
-**Run the full pipeline on a GPU server:**
+---
+
+## Installation
+
 ```bash
-python scripts/deploy_and_queue.py   # syncs code + queues Phase 1→5 automatically
+git clone https://github.com/your-org/cured-decoding-router.git
+cd cured-decoding-router
+pip install -r requirements.txt
 ```
 
-## Canonical Result Location
+GPU requirements: ≥ 24 GB VRAM for 8B models (4-bit), ≥ 40 GB for 32B models.
 
-Use results/CANONICAL_v2 as the single source of truth for reportable final tables.
+---
 
-Expected final files:
+## Quickstart
 
-- results/CANONICAL_v2/results_8b_truthfulqa_full_mc.json
-- results/CANONICAL_v2/results_3b_truthfulqa_full_mc.json
-- results/CANONICAL_v2/results_8b_medhallu_v2.json
-- results/CANONICAL_v2/results_8b_pubmedqa_v2.json
-- results/CANONICAL_v2/results_8b_medqa_v3_fixed.json
-- results/CANONICAL_v2/results_3b_medhallu_n100.json
-- results/CANONICAL_v2/results_openrouter_medqa_v2.json
-- results/CANONICAL_v2/results_openrouter_pubmedqa_v2.json
-- results/CANONICAL_v2/results_openrouter_medhallu_v2.json
+```bash
+# Run CURED router on TruthfulQA (n=100, 8B model)
+python cured.py \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --load-in-4bit \
+  --protocols cured \
+  --router new \
+  --router-config configs/router_thresholds.json \
+  --benchmark truthfulqa \
+  --n 100 --seed 42 \
+  --save-per-question \
+  --out results/my_run.json
 
-## Borrowed GPU Quickstart
+# Compare protocols side-by-side
+python cured.py \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --load-in-4bit \
+  --protocols greedy,alta,cured \
+  --benchmark medhallu \
+  --n 50 --skip-iti \
+  --out results/comparison.json
+```
 
-See scripts/autodl/QUICKSTART.md.
+---
 
-Minimal flow:
+## Python API
 
-1) bash scripts/autodl/bootstrap_gpu_env.sh
-2) bash scripts/autodl/run_final_suite.sh
-3) bash scripts/autodl/organize_final_results.sh
+```python
+from cured import CUREDRouterV2
+from cured.calibration import measure_r2
+from cured.scoring import cosine_match
 
-## Unattended Auto Queue (Safe To Leave VS Code)
+# Load model (standard HuggingFace)
+from transformers import AutoModelForCausalLM, AutoTokenizer
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
 
-Use this when you want post-final-suite jobs to run automatically even after you disconnect:
+# Calibrate and build router
+r2 = measure_r2(model, tokenizer, n_questions=15)
+router = CUREDRouterV2(model, tokenizer)
 
-1) Start the main suite:
+# Route a question
+result = router.route(
+    prompt="Answer concisely: What is the capital of France?",
+    question="What is the capital of France?",
+)
+print(result["text"])       # → "Paris"
+print(result["strategy"])   # → "greedy_confident" / "alta_global_viable" / …
+```
 
-	bash scripts/autodl/run_final_suite.sh
+---
 
-2) Start the queued follow-up runner in detached mode:
+## 5-Phase Experiment Pipeline
 
-	nohup bash scripts/autodl/queue_after_triviaqa_v2.sh >/tmp/queue_after_triviaqa_v2_boot.out 2>&1 < /dev/null &
+| Phase | Description | Key script |
+|---|---|---|
+| **Phase 1** | Measure logit linearity (R²) per model | `experiments/compute_logit_linearity.py` |
+| **Phase 2** | Protocol ablations (greedy/ALTA/CoVe/ITI) | `scripts/autodl/run_phase2_ablations.sh` |
+| **Phase 3** | Calibrate router thresholds | `calibrate_router.py` |
+| **Phase 4** | Main CURED v2 evaluation (n=500) | `scripts/autodl/run_all_experiments.sh` |
+| **Phase 5** | Statistics + R²-stratified analysis | `compute_final_stats.py` |
 
-What this queue runs automatically after the suite exits:
+Full pipeline (A100/A800):
+```bash
+bash scripts/autodl/run_all_experiments.sh
+```
 
-- 8B TruthfulQA MC v2 rerun
-- 3B TruthfulQA MC v2 rerun (parallel with 8B)
-- 8B both n=100 v2 (after both MC jobs succeed)
+---
 
-Live queue log location:
+## Router Architecture
 
-- logs/queue_after_triviaqa_v2_*.log
+```
+Question → extract (R², κ, ECR, H_final, SC, domain)
+                │
+    ┌───────────▼───────────────┐
+    │ Gate 1: H_final ≤ τ_H_easy│ → greedy_confident
+    └───────────────────────────┘
+                │ (not fired)
+    ┌───────────▼────────────────────────┐
+    │ Scale: model R² ≥ 0.55 + not med  │ → alta_global_viable
+    └────────────────────────────────────┘
+                │
+    ┌───────────▼─────────────────────────────────┐
+    │ Gate 2: kappa ≥ τ_κ=0.70 and ECR ≤ τ_E=0.04│ → alta_gate2
+    └─────────────────────────────────────────────┘
+                │
+    ┌───────────▼──────────────────────┐
+    │ Gate 3: medical and ITI available│ → iti_medical_gate3
+    └──────────────────────────────────┘
+                │
+    ┌───────────▼──────────────────────────────┐
+    │ Gate 4: H_final ≥ τ_H_hard and R² ≥ τ_R2│ → alta_gate4
+    └──────────────────────────────────────────┘
+                │
+    ┌───────────▼──────────────────────┐
+    │ Gate 5: medical and SC > 0.5     │ → cove_gate5_medical
+    │         else                     │ → greedy_gate5
+    └──────────────────────────────────┘
+```
 
-## API Rerun Helper (Windows)
+---
 
-For the fixed MedQA API rerun:
+## Threshold Configuration
 
-scripts\\run_openrouter_job.cmd medqa
+All thresholds in `configs/router_thresholds.json`:
 
-This writes results/results_openrouter_medqa_v2.json.
+```json
+{
+  "tau_kappa":        0.70,
+  "tau_ECR":          0.04,
+  "tau_R2":           0.50,
+  "tau_H_easy":       1.0,
+  "tau_H_hard":       3.5,
+  "tau_SC_easy":      0.8,
+  "tau_SC_hard":      0.5,
+  "profile_mean_r2":  0.582
+}
+```
 
-## Scoring Modes
-
-- cosine: semantic similarity scoring (default for free-form QA).
-- letter: multiple-choice letter scoring.
-- yesno: binary yes/no/maybe scoring.
-- mc: TruthfulQA multiple-choice likelihood scoring with MC1/MC2 summary fields.
-
-## Notes
-
-- Legacy or invalid artifacts should be moved to results/archive.
-- Top-level result JSON files are considered legacy and should be normalized via scripts/autodl/organize_final_results.sh.
-- For current status narrative, use all_results.md.
+---
 
 ## ⚠ MC Scoring Validity Note
 
-Results in `results/CANONICAL_v2/results_*_truthfulqa_full_mc.json` (pre-v2 suffix)
-were produced before the protocol-aware MC scoring fix and **must not be cited**
-for protocol comparison. All protocols scored identically because `mc_score_sample()`
-evaluated raw model log-probs independent of the generation strategy.
+TruthfulQA MC1/MC2 scores require `--scoring mc` and the full MC answer set.
+Default cosine scoring with `--scoring cosine` is the recommended mode for
+generation evaluation and is used in all canonical results above.
 
-Use only files with the `_v2` suffix for TruthfulQA MC comparisons.
-Generation-scored results (`results_8b_both.json`, `results_3b_*`) are unaffected
-and remain valid.
+---
+
+## Citation
+
+```bibtex
+@misc{cured2026,
+  title   = {{CURED}: Complete Unified Routing and Evaluation for Decoding},
+  author  = {Author, A. and Author, B.},
+  year    = {2026},
+  url     = {https://github.com/your-org/cured-decoding-router},
+  note    = {Preprint}
+}
+```
+
+See [PAPER.md](PAPER.md) for full citation info and related work.
