@@ -9,11 +9,11 @@ CUREDRouterV2 (primary)
 
     Gate flow (executed top-to-bottom, first match wins):
     ┌─────────────────────────────────────────────────────────────────┐
-    │ Gate 1 — Easy:   H_final ≤ τ_H_easy  →  greedy_confident       │
-    │ Scale:   ALTA global viability check (model R² ≥ 0.55)         │
-    │ Gate 2 — Feat.:  kappa ≥ τ_kappa and ECR ≤ τ_ECR  →  ALTA     │
+    │ Gate 1 — Easy:   H_final < τ_H_easy (+ SC for ≤14B if computed) → greedy_confident │
+    │ Scale:   profile_mean_r2 ≥ 0.55, non-medical, H_final > τ_H_easy → ALTA shortcut   │
+    │ Gate 2 — Feat.:  R²_q > τ_R2, κ_q < τ_kappa, ECR_q > τ_ECR  →  continue to 3–5    │
     │ Gate 3 — ITI:    domain_medical and ITI available  →  ITI       │
-    │ Gate 4 — Hard:   H_final ≥ τ_H_hard  →  ALTA (hard case)      │
+    │ Gate 4 — Score:  composite S_ALTA > 0.5  →  ALTA                 │
     │ Gate 5 — CoVe:   domain_medical and SC > 0.5  →  CoVe          │
     │          else:   greedy                                         │
     └─────────────────────────────────────────────────────────────────┘
@@ -21,9 +21,9 @@ CUREDRouterV2 (primary)
     Default thresholds (from configs/router_thresholds.json):
         tau_kappa = 0.70   (calibrated from 8B profile; mean kappa ≈ 0.597)
         tau_ECR   = 0.04   (calibrated from 8B profile; mean ECR ≈ 0.031–0.076)
-        tau_R2    = 0.50
-        tau_H_easy = 1.0
-        tau_H_hard = 3.5
+        tau_R2    = 0.65
+        tau_H_easy = 0.5
+        tau_H_hard = 3.0
         profile_mean_r2 = 0.582
 
 CUREDRouter (legacy v1)

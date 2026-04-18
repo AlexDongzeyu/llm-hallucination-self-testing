@@ -1,0 +1,35 @@
+[
+  {
+    "label": "3B TruthfulQA: greedy vs CURED-v2",
+    "n": 500,
+    "baseline": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_3b_truthfulqa_n817.json",
+      "accuracy": 0.518,
+      "ci_95": [
+        0.474,
+        0.562
+      ]
+    },
+    "method": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_3b_truthfulqa_n500_v2.json",
+      "accuracy": 0.602,
+      "ci_95": [
+        0.558,
+        0.646
+      ]
+    },
+    "delta_pp": 8.4,
+    "mcnemar": {
+      "p_exact": 1e-06,
+      "p_chi2": 1e-06,
+      "net_gain": 42,
+      "b": 16,
+      "c": 58,
+      "n_discordant": 74,
+      "n_total": 500,
+      "significant": true
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=+8.4% | p_exact=0.0000 (sig) | discordant=74/500"
+  }
+]

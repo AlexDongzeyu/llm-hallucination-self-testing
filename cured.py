@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# CRITICAL BUG HISTORY: tau_kappa was originally 0.08 and tau_ECR was 0.10.
+# These values passed essentially no questions through Gate 2 because:
+#   measured mean_kappa ≈ 0.597 >> 0.08 (gate requires kappa_q < tau_kappa)
+#   measured mean_ECR   ≈ 0.031–0.076, often < 0.10 (gate requires ECR_q > tau_ECR)
+# Fixed to tau_kappa=0.70 and tau_ECR=0.04 in v2. See configs/router_thresholds.json.
+# Old CURED (broken gates): ~greedy parity on TruthfulQA. Fixed CURED v2: ~+10 pp over greedy.
 """
 CURED: Complete Unified Routing and Evaluation for Decoding
 ===========================================================
@@ -16,14 +22,14 @@ strategy per question using three trajectory features:
   κ    — quadratic gain fraction (curvature of logit trajectory)
   ECR  — Entropy Compression Ratio: H_final / H_peak
 
-Gate flow (CUREDRouterV2):
-  Gate 1  H_final ≤ τ_H_easy (1.0)   →  greedy_confident
-  Scale   model R² ≥ 0.55, not med   →  alta_global_viable
-  Gate 2  κ ≥ τ_κ (0.70) & ECR ≤ τ_E (0.04)  →  alta_gate2
-  Gate 3  medical + ITI available    →  iti_medical_gate3
-  Gate 4  H_final ≥ τ_H_hard (3.5) & R² ≥ τ_R2  →  alta_gate4
-  Gate 5  medical + SC > 0.5         →  cove_gate5_medical
-          else                       →  greedy_gate5
+Gate flow (CUREDRouterV2; first match wins in order below):
+  Gate 1  H_final < τ_H_easy (0.5) and (for ≤14B) SC_q ≥ τ_SC_easy — requires ``--compute-sc``
+          → greedy_confident.  Canonical Phase 4 omits ``--compute-sc``, so Gate 1 is inactive at 3B/8B.
+  Scale   profile_mean_r2 ≥ 0.55, not medical, H_final > τ_H_easy → alta_global_viable
+  Gate 2  R²_q > τ_R2, κ_q < τ_κ, ECR_q > τ_ECR → continue toward ALTA / ITI / CoVe (see Gates 3–5)
+  Gate 3  medical + ITI available → iti_medical_gate3
+  Gate 4  composite ALTA score S_ALTA > 0.5 → alta_gate4
+  Gate 5  medical + SC > 0.5 (when SC computed) → cove_gate5_medical; else → greedy_gate5
 
 5-Phase Experiment Pipeline
 ---------------------------
@@ -2285,7 +2291,7 @@ def compute_ecr(
     its prediction entropy by the final layer (high confidence at output).
 
     Empirical profile (3B): H1=0.08, H7=10.83 (peak), H28=0.85 → ECR=0.078.
-    Gate 2 uses: ECR < tau_ECR (0.04) → route to ALTA.
+    Gate 2 ALTA feasibility includes ECR_q > tau_ECR (see ``CUREDRouterV2.route``).
 
     IMPORTANT: caller must pass hidden_states with the embedding layer already
     removed (e.g. out.hidden_states[1:]).  hidden_states[0] = transformer
@@ -2584,13 +2590,7 @@ def train_iti_probes(
 
 
 # ---------------------------------------------------------------------------
-# Phase 4: CUREDRouterV2 — 5-gate principled router
-#   Gate 1  H_final <= tau_H_easy  -> greedy_confident
-#   Scale   model R2 >= 0.55       -> alta_global_viable
-#   Gate 2  kappa >= tau_kappa and ECR <= tau_ECR  -> alta_gate2
-#   Gate 3  medical + ITI          -> iti_medical_gate3
-#   Gate 4  H_final >= tau_H_hard  -> alta_gate4
-#   Gate 5  medical + SC > 0.5     -> cove_gate5_medical  else greedy_gate5
+# Phase 4: CUREDRouterV2 — 5-gate principled router (see module docstring)
 # ---------------------------------------------------------------------------
 
 
@@ -2708,13 +2708,14 @@ def compute_semantic_entropy(
 
 
 class CUREDRouterV2:
-    """5-gate principled router.
+    """5-gate principled router (see module docstring for full decision order).
 
-    Gate 1: Confidence gate — if model is already confident/consistent → greedy
-    Gate 2: Feasibility gate — ALTA only if R² high, κ low, ECR above floor
-    Gate 3: Domain-safety gate — medical+large → ITI (avoids CoVe snowballing)
-    Gate 4: ALTA composite score — sigmoid of (R², κ, H_final, var_R²)
-    Gate 5: Uncertainty gate — CoVe if genuinely uncertain, else greedy
+    Gate 1: Confidence (H_final, optional SC) → greedy_confident when active.
+    Scale shortcut: profile R² viability + non-medical + H_final > τ_H_easy → ALTA.
+    Gate 2: Feasibility — R²_q > τ_R2, κ_q < τ_kappa, ECR_q > τ_ECR before ALTA path.
+    Gate 3: Medical + ITI available → ITI.
+    Gate 4: Composite ALTA score → alta_gate4.
+    Gate 5: Medical CoVe vs greedy in ``_uncertainty_gate``.
     """
 
     def __init__(
@@ -2792,13 +2793,22 @@ class CUREDRouterV2:
         domain_medical = int(domain == "medical")
 
         # ── Gate 1: Confidence gate ──────────────────────────────────────
-        # SC_q is None for large models (params_B > 14) — use H_final only.
-        # Sentinel 1.0 would make SC condition always-true and collapse Gate 1 silently.
+        # For models > 14B: SC is not computed (3× generate at 32B ≈ +2h per n=500).
+        # Gate 1 reduces to H_final < tau_H_easy for those large models.
+        #
+        # For models ≤ 14B: Gate 1 requires *both* SC_q ≥ tau_SC_easy AND
+        # H_final < tau_H_easy. SC_q = None when --compute-sc is absent (the
+        # default in Phase 4 runs for efficiency), making Gate 1 permanently
+        # inactive for 3B/8B in canonical evaluation. The scale-aware shortcut
+        # (between Gates 1 and 2) handles confident-question routing instead.
+        #
+        # A production deployment using --compute-sc would activate Gate 1 for
+        # all scales ≤ 14B and route high-SC, low-entropy questions to greedy_confident.
         if self.params_B > 14.0:
             gate1_fires = H_final < self.tau_H_easy
         else:
             gate1_fires = (
-                SC_q is not None
+                SC_q is not None          # always False without --compute-sc
                 and SC_q >= self.tau_SC_easy
                 and H_final < self.tau_H_easy
             )

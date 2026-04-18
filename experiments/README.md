@@ -104,16 +104,15 @@ Key outputs:
 |---|---|---|
 | `compute_logit_linearity.py` | 1 | Per-model R² profile measurement |
 | `compute_linearity_8b_groq.py` | 1 | R² via Groq API (no local GPU) |
-| `eval_base.py` | 1 | Base evaluation with early stopping |
-| `eval_calibration_phase1.py` | 1 | Calibration phase 1 evaluation |
 | `run_alta_3b.py` | 2 | ALTA 3B standalone ablation |
 | `run_delta_dola_sweep.py` | 2 | Δ-DoLa hyperparameter sweep |
+| `run_delta_dola_complete_grid.py` | 2 | Δ-DoLa full grid |
 | `run_medhallu_ablations.py` | 2 | MedHallu protocol ablations |
 | `run_medhallu_eval.py` | 2 | MedHallu generation eval |
 | `run_medhallu_generation.py` | 2 | MedHallu generation (batch) |
+| `eval_medhallu.py` | 2 | MedHallu evaluation helper |
 | `build_routing_dataset.py` | 3 | Build routing training dataset |
 | `check_low_threshold.py` | 3 | Diagnose low-threshold issues |
-| `eval_grid.py` | 3 | Grid search over thresholds |
 | `run_semantic_entropy_ablation.py` | 4/5 | ECR vs semantic-entropy comparison |
 | `generate_paper_figures.py` | 5 | Generate all paper figures |
 | `regenerate_figures.py` | 5 | Re-generate figures from saved data |
@@ -122,13 +121,6 @@ Key outputs:
 
 ---
 
-## Pipeline Scripts (PowerShell, local development)
+## Local Windows helpers
 
-These were used for local Windows development runs before the A100 pipeline
-was established:
-
-- `pipeline_all_steps.ps1` — Orchestrate all phases locally
-- `pipeline_remaining_steps.ps1` — Continue from a checkpoint
-- `pipeline_common.ps1` — Shared helpers
-
-These are not needed for GPU-cluster reproduction.
+For one-off local runs, see `scripts/run_all_local.ps1` and the online runner stubs under `scripts/` (Groq / Cloudflare / Foundry). The canonical reproduction path is `scripts/autodl/run_all_experiments.sh` on GPU.

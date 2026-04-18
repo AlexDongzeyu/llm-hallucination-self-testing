@@ -1,0 +1,35 @@
+[
+  {
+    "label": "8B MedHallu: greedy-ablation vs CURED-v2",
+    "n": 200,
+    "baseline": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/ablation_8b_greedy_medhallu_n200.json",
+      "accuracy": 0.455,
+      "ci_95": [
+        0.385,
+        0.52
+      ]
+    },
+    "method": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_8b_medhallu_n500_v2.json",
+      "accuracy": 0.49,
+      "ci_95": [
+        0.42,
+        0.56
+      ]
+    },
+    "delta_pp": 3.5,
+    "mcnemar": {
+      "p_exact": 0.167068,
+      "p_chi2": 0.108294,
+      "net_gain": 7,
+      "b": 6,
+      "c": 13,
+      "n_discordant": 19,
+      "n_total": 200,
+      "significant": false
+    },
+    "power_at_n": 0.201,
+    "interpretation": "delta=+3.5% | p_exact=0.1671 (not sig) | discordant=19/200"
+  }
+]

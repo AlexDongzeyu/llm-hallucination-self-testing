@@ -1,0 +1,35 @@
+[
+  {
+    "label": "3B MedHallu: greedy-ablation vs CURED-v2",
+    "n": 200,
+    "baseline": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/ablation_3b_greedy_medhallu_n200.json",
+      "accuracy": 0.55,
+      "ci_95": [
+        0.48,
+        0.62
+      ]
+    },
+    "method": {
+      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_3b_medhallu_n500_v2.json",
+      "accuracy": 0.525,
+      "ci_95": [
+        0.455,
+        0.595
+      ]
+    },
+    "delta_pp": -2.5,
+    "mcnemar": {
+      "p_exact": 0.458258,
+      "p_chi2": 0.35316,
+      "net_gain": -5,
+      "b": 17,
+      "c": 12,
+      "n_discordant": 29,
+      "n_total": 200,
+      "significant": false
+    },
+    "power_at_n": 0.201,
+    "interpretation": "delta=-2.5% | p_exact=0.4583 (not sig) | discordant=29/200"
+  }
+]

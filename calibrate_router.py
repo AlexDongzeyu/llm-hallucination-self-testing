@@ -4,6 +4,10 @@ Reads all ablation_*.json files from results/CANONICAL_v2/, pivots per-question
 correctness to find which protocol wins per question, trains a shallow decision tree,
 and extracts the root + depth-2 splits as calibrated threshold values.
 
+Production Phase 4 thresholds in ``configs/router_thresholds.json`` were finalized
+with manual inspection; ``tau_kappa`` / ``tau_ECR`` were corrected from broken
+defaults (0.08 / 0.10) — see the CRITICAL BUG HISTORY header in ``cured.py``.
+
 IMPORTANT: Manual review of the printed tree is required for deeper nodes.
 The auto-extracted thresholds cover only the root and depth-2 splits.
 

@@ -35,8 +35,20 @@ from scipy.stats import binomtest
 
 
 def _strip_n_suffix(key: str) -> str:
-    """Strip trailing _n<digits> from a filename stem key for pairing."""
-    return re.sub(r"_n\d+$", "", key)
+    """Normalise a filename stem key for greedy/CURED pairing.
+
+    Strips both ``_n<digits>`` *and* any trailing ``_v<digits>`` suffix so that
+    ``3b_truthfulqa_n500_v2`` and ``3b_truthfulqa_n817`` both reduce to the
+    canonical key ``3b_truthfulqa``.
+
+    Without this, v2 files (ending in ``_n500_v2``) never match greedy files
+    (ending in ``_n817``) in the auto-scan mode because ``re.sub(r"_n\d+$")``
+    only matches at end-of-string and ``_v2`` sits after the ``_n`` token.
+    """
+    # Strip _v<digits> first, then _n<digits>
+    key = re.sub(r"_v\d+$", "", key)
+    key = re.sub(r"_n\d+$", "", key)
+    return key
 
 
 def parse_args() -> argparse.Namespace:

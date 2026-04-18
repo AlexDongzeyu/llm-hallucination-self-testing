@@ -1,0 +1,16 @@
+{
+  "_comment": "3B-specific router config. profile_mean_r2=0.501 comes from experiments/compute_logit_linearity.py on Llama-3.2-3B-Instruct. With 0.501 < 0.55, alta_globally_viable=False so the scale-aware shortcut is DISABLED. Use this to measure how much of the 3B TruthfulQA gain comes from the shortcut vs. Gates 2/4. All other thresholds identical to router_thresholds.json.",
+  "_calibration_source": "results/CANONICAL_v2/profile_3b.json (mean_r2); same tau_* as router_thresholds.json.",
+  "tau_R2": 0.65,
+  "tau_kappa": 0.70,
+  "tau_ECR": 0.04,
+  "tau_H_easy": 0.5,
+  "tau_H_hard": 3.0,
+  "tau_SC_easy": 0.90,
+  "tau_SC_hard": 0.60,
+  "beta1": 3.0,
+  "beta2": 0.5,
+  "beta3": 5.0,
+  "beta4": 2.0,
+  "profile_mean_r2": 0.501
+}
