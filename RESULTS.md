@@ -167,3 +167,4 @@ Critical calibrated values (corrected from README Bug A):
 - **Gate 1 inactive (Issue 5):** For models ≤14B, Gate 1 requires SC_q (self-consistency). Phase 4
   runs omit `--compute-sc` for efficiency; Gate 1 is therefore inactive for all canonical 3B/8B
   results. Models >14B use `H_final < tau_H_easy` only (SC not required).
+- **Figure 4 transparency caption:** "CURED gain at 3B depends on cross-scale R² calibration. With native 3B profiling, gain collapses."

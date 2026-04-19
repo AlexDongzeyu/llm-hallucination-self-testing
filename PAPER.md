@@ -1,6 +1,6 @@
 # Paper assets
 
-- **Figures:** `paper/figures/` — copies of fig1–fig5 used in the manuscript (sources regenerated via `experiments/generate_paper_figures.py`).
+- **Figures:** `paper/figures/` — copies of fig1–fig4 used in the manuscript (sources regenerated via `experiments/generate_paper_figures.py`).
 - **PDF:** add `paper/cured_paper.pdf` when the camera-ready build is fixed.
 
 ## Citation

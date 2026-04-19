@@ -1,28 +1,27 @@
-"""
-generate_paper_figures.py
-Generates all figures needed for the CURED paper.
+"""Generate exactly four manuscript figures from canonical result files.
 
-Figure 1: Layer-wise entropy trajectory (RLHF entropy compression)
-Figure 2: Method comparison across benchmarks (main results table as chart)
-Figure 3: DeLTa+DoLa alpha sweep heatmap
-Figure 4: Routing dataset feature distributions (d2H by domain)
-Figure 5: Cross-model CoVe degradation
+Figure 1: Mean R^2 vs ALTA gain over greedy (8 points: 4 scales x 2 benchmarks)
+Figure 2: 3B per-layer entropy profile from results/entropy_by_layer.json
+Figure 3: TruthfulQA grouped bars (Greedy vs CURED v2) with significance stars
+Figure 4: 3B transparency plot (native-profile vs cross-scale-profile CURED)
 
 Usage:
     python experiments/generate_paper_figures.py
-Output: results/figures/*.png
 """
 
-import csv
+from __future__ import annotations
+
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-FIGURES = ROOT / "results" / "figures"
-FIGURES.mkdir(parents=True, exist_ok=True)
+CANONICAL = ROOT / "results" / "CANONICAL_v2"
+FIGURES_RESULTS = ROOT / "results" / "figures"
+FIGURES_PAPER = ROOT / "paper" / "figures"
+FIGURES_RESULTS.mkdir(parents=True, exist_ok=True)
+FIGURES_PAPER.mkdir(parents=True, exist_ok=True)
 
 try:
     import matplotlib
@@ -35,367 +34,286 @@ except ImportError:
     print("matplotlib is not installed. Install it with pip install matplotlib")
     HAS_MPL = False
 
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+try:
+    from scipy import stats as scipy_stats
+
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
 
 
-def fig1_entropy_trajectory():
-    """
-    Show monotonic entropy drop across layers.
-    Data is reconstructed from measured endpoints for visualization.
-    """
-    n_layers = 28
-    layers = np.arange(1, n_layers + 1)
+def load_json(path: Path):
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
-    # Reconstruct an approximate mean trajectory using known endpoints.
-    h_mean = 10.81 * np.exp(-0.18 * (layers - 1))
-    h_mean = h_mean * (0.95 / h_mean[-1])
 
-    np.random.seed(42)
-    h_spread = h_mean[:, None] + np.random.randn(n_layers, 100) * (h_mean[:, None] * 0.15)
-    h_spread = np.clip(h_spread, 0, None)
+def extract_accuracy(payload: dict, benchmark: str, protocol: str) -> float:
+    return float(payload["results"][benchmark][protocol]["accuracy"])
 
-    fig, ax = plt.subplots(figsize=(8, 5))
 
-    for i in range(min(20, h_spread.shape[1])):
-        ax.plot(layers, h_spread[:, i], color="#2196F3", alpha=0.08, linewidth=0.8)
+def save_figure(fig, filename: str) -> None:
+    out_results = FIGURES_RESULTS / filename
+    out_paper = FIGURES_PAPER / filename
+    fig.savefig(out_results, dpi=220, bbox_inches="tight")
+    fig.savefig(out_paper, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved: {out_results}")
+    print(f"Saved: {out_paper}")
 
-    ax.plot(layers, h_mean, color="#1565C0", linewidth=2.5, label="Mean (n=100)", zorder=5)
 
-    ax.annotate(
-        "H1 ~ 10.81",
-        xy=(1, h_mean[0]),
-        xytext=(3, h_mean[0] + 0.5),
-        fontsize=9,
-        color="#1565C0",
-        arrowprops=dict(arrowstyle="-", color="#1565C0", lw=0.8),
-    )
-    ax.annotate(
-        "H28 ~ 0.95",
-        xy=(28, h_mean[-1]),
-        xytext=(22, h_mean[-1] + 1.5),
-        fontsize=9,
-        color="#1565C0",
-        arrowprops=dict(arrowstyle="-", color="#1565C0", lw=0.8),
-    )
+def scale_label(scale: str) -> str:
+    return scale.upper().replace("B", "B")
 
-    ax.fill_between(
-        layers,
-        h_spread.min(axis=1),
-        h_spread.max(axis=1),
-        alpha=0.1,
-        color="#2196F3",
-        label="All 100 questions",
-    )
 
+def load_p_values_by_scale() -> dict[str, float]:
+    pvals: dict[str, float] = {}
+
+    table_path = CANONICAL / "statistics_table.json"
+    if table_path.exists():
+        rows = load_json(table_path)
+        for row in rows:
+            label = str(row.get("label", "")).lower()
+            for scale in ("3b", "8b", "14b", "32b"):
+                if f"{scale}_truthfulqa" in label:
+                    pvals[scale] = float(row["mcnemar"]["p_exact"])
+
+    # Prefer v2 significance for 3B and 8B headline comparisons.
+    for scale in ("3b", "8b"):
+        stats_path = CANONICAL / f"stats_{scale}_tqa_v2.json"
+        if stats_path.exists():
+            rows = load_json(stats_path)
+            if rows:
+                pvals[scale] = float(rows[0]["mcnemar"]["p_exact"])
+
+    return pvals
+
+
+def figure1_r2_vs_alta_gain() -> None:
+    scales = ["3b", "8b", "14b", "32b"]
+    benches = [("truthfulqa", "TQA", "#1565C0"), ("medhallu", "Med", "#C62828")]
+
+    points = []
+    for scale in scales:
+        r2_payload = load_json(CANONICAL / f"profile_{scale}.json")
+        mean_r2 = float(r2_payload["mean_r2"])
+
+        for bench, bench_short, color in benches:
+            greedy_payload = load_json(CANONICAL / f"ablation_{scale}_greedy_{bench}_n200.json")
+            alta_payload = load_json(CANONICAL / f"ablation_{scale}_alta_{bench}_n200.json")
+            greedy_acc = extract_accuracy(greedy_payload, bench, "greedy")
+            alta_acc = extract_accuracy(alta_payload, bench, "alta")
+            gain_pp = (alta_acc - greedy_acc) * 100.0
+
+            points.append(
+                {
+                    "x": mean_r2,
+                    "y": gain_pp,
+                    "label": f"{scale_label(scale)}-{bench_short}",
+                    "color": color,
+                }
+            )
+
+    x = np.array([p["x"] for p in points], dtype=float)
+    y = np.array([p["y"] for p in points], dtype=float)
+
+    slope, intercept = np.polyfit(x, y, 1)
+    line_x = np.linspace(x.min() - 0.01, x.max() + 0.01, 100)
+    line_y = slope * line_x + intercept
+
+    if HAS_SCIPY:
+        r_val, p_val = scipy_stats.pearsonr(x, y)
+    else:
+        r_val = float(np.corrcoef(x, y)[0, 1])
+        p_val = float("nan")
+
+    fig, ax = plt.subplots(figsize=(8.4, 5.8))
+    for p in points:
+        ax.scatter(p["x"], p["y"], s=70, color=p["color"], edgecolors="white", linewidth=0.8, zorder=3)
+        ax.annotate(p["label"], (p["x"], p["y"]), textcoords="offset points", xytext=(5, 5), fontsize=9)
+
+    ax.plot(line_x, line_y, color="#37474F", linewidth=2.0, label="Linear regression")
+
+    p_text = "n/a" if np.isnan(p_val) else (f"{p_val:.1e}" if p_val < 1e-3 else f"{p_val:.3f}")
     ax.text(
-        14,
-        5.5,
-        "dH < 0 for 100% of questions\n(mean delta H = -9.86)",
-        fontsize=9,
-        ha="center",
-        color="#C62828",
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="#FFEBEE", edgecolor="#C62828", alpha=0.8),
-    )
-
-    ax.set_xlabel("Transformer Layer", fontsize=11)
-    ax.set_ylabel("Token Distribution Entropy (nats)", fontsize=11)
-    ax.set_title(
-        "RLHF Entropy Compression: Entropy Decreases Monotonically\n"
-        "Across All Layers for All Questions",
-        fontsize=11,
-        fontweight="bold",
-    )
-    ax.legend(fontsize=9)
-    ax.set_xlim(1, 28)
-    ax.set_ylim(-0.2, 12)
-    ax.grid(True, alpha=0.3)
-
-    out = FIGURES / "fig1_entropy_compression.png"
-    plt.tight_layout()
-    plt.savefig(out, dpi=200, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-
-def fig2_method_comparison():
-    """
-    Grouped bar chart for main method comparison.
-    Values follow the paper summary table.
-    """
-    methods = [
-        "Greedy\n(baseline)",
-        "SLED",
-        "BoN-5",
-        "CoVe",
-        "ITI\nalpha=0.5",
-        "DeLTa\n+DoLa",
-        "SelfCheck",
-        "CURED\n(ours)",
-    ]
-
-    tqa = [0.70, 0.64, 0.64, 0.60, 0.72, 0.74, 0.72, 0.74]
-    mhg = [0.46, None, None, 0.54, None, None, None, 0.52]
-
-    x = np.arange(len(methods))
-    width = 0.35
-
-    fig, ax = plt.subplots(figsize=(11, 5.5))
-
-    bars1 = ax.bar(
-        x - width / 2,
-        tqa,
-        width,
-        label="TruthfulQA (adversarial QA)",
-        color=["#90A4AE" if m != "CURED\n(ours)" else "#1565C0" for m in methods],
-        edgecolor="white",
-        linewidth=0.5,
-    )
-
-    mhg_vals = [v if v is not None else 0 for v in mhg]
-    bars2 = ax.bar(
-        x + width / 2,
-        mhg_vals,
-        width,
-        label="MedHallu (medical QA)",
-        color=["#EF9A9A" if m != "CURED\n(ours)" else "#C62828" for m in methods],
-        edgecolor="white",
-        linewidth=0.5,
-        alpha=0.9,
-    )
-
-    for i, v in enumerate(mhg):
-        if v is None:
-            bars2[i].set_height(0)
-            bars2[i].set_alpha(0)
-
-    ax.axhline(0.70, color="#546E7A", linewidth=1, linestyle="--", alpha=0.6, label="Greedy baseline (TruthfulQA)")
-    ax.axhline(0.46, color="#B71C1C", linewidth=1, linestyle=":", alpha=0.6, label="Greedy baseline (MedHallu)")
-
-    ax.annotate(
-        "No degradation\nvs greedy",
-        xy=(len(methods) - 1 - width / 2, 0.74),
-        xytext=(len(methods) - 3.5, 0.82),
-        fontsize=7.5,
-        color="#1565C0",
-        arrowprops=dict(arrowstyle="->", color="#1565C0", lw=1),
-    )
-    ax.annotate(
-        "+6% over greedy",
-        xy=(len(methods) - 1 + width / 2, 0.52),
-        xytext=(len(methods) - 3.0, 0.62),
-        fontsize=7.5,
-        color="#C62828",
-        arrowprops=dict(arrowstyle="->", color="#C62828", lw=1),
-    )
-
-    for bar in bars1:
-        h = bar.get_height()
-        if h > 0:
-            ax.text(bar.get_x() + bar.get_width() / 2, h + 0.005, f"{h:.0%}", ha="center", va="bottom", fontsize=7, color="#37474F")
-
-    for i, bar in enumerate(bars2):
-        h = bar.get_height()
-        if h > 0 and mhg[i] is not None:
-            ax.text(bar.get_x() + bar.get_width() / 2, h + 0.005, f"{h:.0%}", ha="center", va="bottom", fontsize=7, color="#B71C1C")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(methods, fontsize=9)
-    ax.set_ylabel("Accuracy", fontsize=11)
-    ax.set_ylim(0, 0.92)
-    ax.set_title(
-        "CURED: Only Method Achieving Positive Results on Both Benchmarks\n"
-        "Llama-3.2-3B-Instruct, n=50 per benchmark",
-        fontsize=11,
-        fontweight="bold",
-    )
-    ax.legend(fontsize=8.5, loc="upper left")
-    ax.grid(axis="y", alpha=0.3)
-    ax.axvspan(len(methods) - 1 - 0.5, len(methods) - 0.5, alpha=0.07, color="#1565C0")
-
-    out = FIGURES / "fig2_method_comparison.png"
-    plt.tight_layout()
-    plt.savefig(out, dpi=200, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-
-def fig3_delta_dola_sweep():
-    """Heatmap of DeLTa+DoLa accuracy vs alpha1 and alpha2."""
-    sweep_path = ROOT / "results" / "truthfulqa_delta_dola_sweep.json"
-    if not sweep_path.exists():
-        print("Skipping fig3 - truthfulqa_delta_dola_sweep.json not found")
-        return
-
-    with open(sweep_path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    results = data["results"]
-    alpha1_vals = sorted(set(r["alpha1"] for r in results))
-    alpha2_vals = sorted(set(r["alpha2"] for r in results))
-
-    grid = np.full((len(alpha2_vals), len(alpha1_vals)), np.nan)
-    for r in results:
-        i = alpha2_vals.index(r["alpha2"])
-        j = alpha1_vals.index(r["alpha1"])
-        grid[i, j] = r["accuracy"]
-
-    fig, ax = plt.subplots(figsize=(7, 5))
-    im = ax.imshow(grid, cmap="RdYlGn", vmin=0.62, vmax=0.78, aspect="auto")
-
-    ax.set_xticks(range(len(alpha1_vals)))
-    ax.set_yticks(range(len(alpha2_vals)))
-    ax.set_xticklabels([f"alpha1={v}" for v in alpha1_vals], fontsize=9)
-    ax.set_yticklabels([f"alpha2={v}" for v in alpha2_vals], fontsize=9)
-    ax.set_xlabel("DeLTa weight (alpha1)", fontsize=10)
-    ax.set_ylabel("DoLa weight (alpha2)", fontsize=10)
-    ax.set_title(
-        "DeLTa+DoLa: TruthfulQA Accuracy vs Alpha Values\n"
-        "Greedy baseline = 70% | Best = 74%",
-        fontsize=10,
-        fontweight="bold",
-    )
-
-    for i in range(len(alpha2_vals)):
-        for j in range(len(alpha1_vals)):
-            v = grid[i, j]
-            if not np.isnan(v):
-                color = "white" if v < 0.68 else "black"
-                note = "*" if (alpha1_vals[j] == 0.0 and alpha2_vals[i] == 0.0) else ""
-                ax.text(j, i, f"{v:.0%}{note}", ha="center", va="center", fontsize=9, color=color, fontweight="bold")
-
-    plt.colorbar(im, ax=ax, label="Accuracy")
-
-    ax.text(
-        0.98,
         0.02,
-        "* Pure greedy point\nNon-zero alpha usually hurts or ties",
+        0.98,
+        f"r = {r_val:.3f}\np = {p_text}",
         transform=ax.transAxes,
-        fontsize=7.5,
-        ha="right",
-        va="bottom",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="gray"),
+        ha="left",
+        va="top",
+        fontsize=10,
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor="#90A4AE", alpha=0.95),
     )
 
-    out = FIGURES / "fig3_delta_dola_sweep.png"
-    plt.tight_layout()
-    plt.savefig(out, dpi=200, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
+    ax.set_xlabel("Mean R^2 (mechanistic profile)", fontsize=11)
+    ax.set_ylabel("ALTA gain over greedy (percentage points)", fontsize=11)
+    ax.set_title("Figure 1: Mechanistic Linearity Predicts ALTA Gain", fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.25)
+    ax.axhline(0, color="#B0BEC5", linewidth=1)
+    ax.legend(loc="lower right", fontsize=9)
+
+    save_figure(fig, "fig1_r2_vs_alta_gain.png")
 
 
-def fig4_d2h_routing():
-    """Plot d2H distribution by domain and a routing performance summary."""
-    routing_path = ROOT / "results" / "routing_dataset.csv"
-    if not routing_path.exists():
-        print("Skipping fig4 - routing_dataset.csv not found")
-        return
+def figure2_entropy_curve() -> None:
+    entropy = load_json(ROOT / "results" / "entropy_by_layer.json")
+    curves = np.array(entropy["all_curves"], dtype=float)
+    means = np.array(entropy["layer_means"], dtype=float)
+    layers = np.arange(1, len(means) + 1)
 
-    medical_d2h = []
-    general_d2h = []
+    peak_idx = int(np.argmax(means))
+    peak_layer = int(layers[peak_idx])
+    peak_val = float(means[peak_idx])
+    final_layer = int(layers[-1])
+    final_val = float(means[-1])
 
-    with open(routing_path, encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            d2h = float(row["d2H"])
-            if row["domain"] == "medical":
-                medical_d2h.append(d2h)
-            else:
-                general_d2h.append(d2h)
+    fig, ax = plt.subplots(figsize=(8.4, 5.8))
+    for curve in curves:
+        ax.plot(layers, curve, color="#90CAF9", alpha=0.35, linewidth=0.9)
 
-    threshold = -0.82
+    ax.plot(layers, means, color="#0D47A1", linewidth=2.8, label=f"Mean (n={entropy['n_questions']})")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    ax.annotate(
+        f"peak ~ {peak_val:.2f}",
+        xy=(peak_layer, peak_val),
+        xytext=(peak_layer + 2, peak_val + 0.5),
+        fontsize=9,
+        color="#0D47A1",
+        arrowprops=dict(arrowstyle="->", color="#0D47A1", lw=1),
+    )
+    ax.annotate(
+        f"final ~ {final_val:.2f}",
+        xy=(final_layer, final_val),
+        xytext=(final_layer - 8, final_val + 1.2),
+        fontsize=9,
+        color="#0D47A1",
+        arrowprops=dict(arrowstyle="->", color="#0D47A1", lw=1),
+    )
 
-    bins = np.linspace(-25, 5, 40)
-    ax1.hist(medical_d2h, bins=bins, alpha=0.7, color="#C62828", label=f"Medical (n={len(medical_d2h)})", density=True)
-    ax1.hist(general_d2h, bins=bins, alpha=0.7, color="#1565C0", label=f"General (n={len(general_d2h)})", density=True)
-    ax1.axvline(threshold, color="black", linewidth=2, linestyle="--", label=f"Routing threshold ({threshold})")
-
-    ax1.set_xlabel("d2H (Entropy Curvature)", fontsize=10)
-    ax1.set_ylabel("Density", fontsize=10)
-    ax1.set_title("d2H Distribution by Domain", fontsize=10, fontweight="bold")
-    ax1.legend(fontsize=8)
-    ax1.grid(alpha=0.3)
-
-    ax1.text(threshold - 1, ax1.get_ylim()[1] * 0.8, "-> CoVe", ha="right", color="#C62828", fontsize=9, fontweight="bold")
-    ax1.text(threshold + 0.5, ax1.get_ylim()[1] * 0.8, "ITI ->", ha="left", color="#E65100", fontsize=9, fontweight="bold")
-
-    # Use known summary values for the right panel.
-    bar_labels = ["Greedy\n(all med)", "CoVe\n(all med)", "CURED\n(routed)"]
-    bar_vals = [0.46, 0.54, 0.52]
-    bar_colors = ["#90A4AE", "#EF9A9A", "#C62828"]
-
-    bars = ax2.bar(bar_labels, bar_vals, color=bar_colors, edgecolor="white", width=0.5)
-    ax2.axhline(0.46, color="#546E7A", linewidth=1.5, linestyle="--", alpha=0.7, label="Greedy baseline")
-
-    for bar, val in zip(bars, bar_vals):
-        ax2.text(bar.get_x() + bar.get_width() / 2, val + 0.005, f"{val:.0%}", ha="center", va="bottom", fontsize=10, fontweight="bold")
-
-    ax2.set_ylabel("Generation Accuracy (cosine >= 0.65)", fontsize=10)
-    ax2.set_title("MedHallu Generation Accuracy", fontsize=10, fontweight="bold")
-    ax2.set_ylim(0, 0.70)
-    ax2.legend(fontsize=8)
-    ax2.grid(axis="y", alpha=0.3)
-
-    out = FIGURES / "fig4_routing.png"
-    plt.tight_layout()
-    plt.savefig(out, dpi=200, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
-
-
-def fig5_cross_model():
-    """Show CoVe trend across different model sizes."""
-    models = ["Llama-3.2-3B\n(ours)", "Llama-3.3\n70B", "Llama-4-Scout\n17B", "Qwen3\n32B", "GPT-OSS\n120B"]
-    greedy = [0.70, 0.74, 0.68, 0.70, 0.62]
-    cove = [0.60, 0.66, 0.56, 0.70, 0.56]
-
-    x = np.arange(len(models))
-    width = 0.35
-
-    fig, ax = plt.subplots(figsize=(9, 5))
-
-    ax.bar(x - width / 2, greedy, width, label="Greedy", color="#546E7A", alpha=0.85)
-    ax.bar(x + width / 2, cove, width, label="CoVe", color="#EF9A9A", alpha=0.85)
-
-    for i, (g, c) in enumerate(zip(greedy, cove)):
-        delta = c - g
-        color = "#C62828" if delta < 0 else "#2E7D32"
-        ax.text(i, max(g, c) + 0.01, f"{delta:+.0%}", ha="center", fontsize=9, color=color, fontweight="bold")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(models, fontsize=9)
-    ax.set_ylabel("Accuracy (TruthfulQA, threshold=0.65)", fontsize=10)
+    ax.set_xlabel("Layer", fontsize=11)
+    ax.set_ylabel("Entropy (nats)", fontsize=11)
     ax.set_title(
-        "Cross-Model CoVe Trend on Adversarial QA",
-        fontsize=10,
+        "Figure 2: 3B Per-Layer Entropy Curves (RLHF Compression)\n"
+        f"Early peak ~{peak_val:.2f} -> H{final_layer} ~{final_val:.2f}",
+        fontsize=12,
         fontweight="bold",
     )
-    ax.legend(fontsize=9)
-    ax.set_ylim(0, 0.88)
-    ax.grid(axis="y", alpha=0.3)
+    ax.set_xlim(1, final_layer)
+    ax.set_ylim(0, max(11.5, float(np.max(curves)) + 0.2))
+    ax.grid(True, alpha=0.25)
+    ax.legend(loc="upper right", fontsize=9)
 
-    out = FIGURES / "fig5_cross_model_cove.png"
-    plt.tight_layout()
-    plt.savefig(out, dpi=200, bbox_inches="tight")
-    plt.close()
-    print(f"Saved: {out}")
+    save_figure(fig, "fig2_entropy_curve_3b.png")
+
+
+def figure3_grouped_truthfulqa() -> None:
+    scales = ["3b", "8b", "14b", "32b"]
+    pvals = load_p_values_by_scale()
+
+    greedy_files = {
+        "3b": "main_greedy_3b_truthfulqa_n817.json",
+        "8b": "main_greedy_8b_truthfulqa_n817.json",
+        "14b": "main_greedy_14b_truthfulqa_n817.json",
+        "32b": "main_greedy_32b_truthfulqa_n817.json",
+    }
+    cured_v2_files = {
+        "3b": "main_cured_3b_truthfulqa_n500_v2.json",
+        "8b": "main_cured_8b_truthfulqa_n500_v2.json",
+        "14b": "main_cured_14b_truthfulqa_n500.json",
+        "32b": "main_cured_32b_truthfulqa_n500.json",
+    }
+
+    greedy = []
+    cured = []
+    for scale in scales:
+        g_payload = load_json(CANONICAL / greedy_files[scale])
+        c_payload = load_json(CANONICAL / cured_v2_files[scale])
+        greedy.append(100.0 * extract_accuracy(g_payload, "truthfulqa", "greedy"))
+        cured.append(100.0 * extract_accuracy(c_payload, "truthfulqa", "cured"))
+
+    x = np.arange(len(scales))
+    width = 0.36
+
+    fig, ax = plt.subplots(figsize=(8.4, 5.8))
+    bars_g = ax.bar(x - width / 2, greedy, width, label="Greedy", color="#90A4AE", edgecolor="white", linewidth=0.7)
+    bars_c = ax.bar(x + width / 2, cured, width, label="CURED v2", color="#1565C0", edgecolor="white", linewidth=0.7)
+
+    for idx, (bg, bc) in enumerate(zip(bars_g, bars_c)):
+        ax.text(bg.get_x() + bg.get_width() / 2, bg.get_height() + 0.4, f"{bg.get_height():.1f}%", ha="center", va="bottom", fontsize=8.5)
+        ax.text(bc.get_x() + bc.get_width() / 2, bc.get_height() + 0.4, f"{bc.get_height():.1f}%", ha="center", va="bottom", fontsize=8.5, color="#0D47A1")
+        scale = scales[idx]
+        p_val = pvals.get(scale)
+        if p_val is not None and p_val < 0.05:
+            ax.text(bc.get_x() + bc.get_width() / 2, bc.get_height() + 2.0, "★", ha="center", va="bottom", fontsize=14, color="#0D47A1")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([scale_label(s) for s in scales], fontsize=10)
+    ax.set_ylabel("TruthfulQA accuracy (%)", fontsize=11)
+    ax.set_title("Figure 3: TruthfulQA Headline Result (Greedy vs CURED v2)", fontsize=12, fontweight="bold")
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(loc="upper left", fontsize=9)
+    ax.text(0.99, 0.02, "★ p < 0.05", transform=ax.transAxes, ha="right", va="bottom", fontsize=9)
+
+    y_top = max(max(greedy), max(cured)) + 6.0
+    y_bottom = min(min(greedy), min(cured)) - 4.0
+    ax.set_ylim(y_bottom, y_top)
+
+    save_figure(fig, "fig3_truthfulqa_greedy_vs_cured_v2.png")
+
+
+def figure4_transparency() -> None:
+    greedy_payload = load_json(CANONICAL / "main_greedy_3b_truthfulqa_n817.json")
+    native_payload = load_json(CANONICAL / "main_cured_3b_truthfulqa_n500_v2_native_profile.json")
+    cross_payload = load_json(CANONICAL / "main_cured_3b_truthfulqa_n500_v2.json")
+
+    values = [
+        100.0 * extract_accuracy(greedy_payload, "truthfulqa", "greedy"),
+        100.0 * extract_accuracy(native_payload, "truthfulqa", "cured"),
+        100.0 * extract_accuracy(cross_payload, "truthfulqa", "cured"),
+    ]
+    labels = ["Greedy", "CURED-native-3B-profile", "CURED-8B-profile"]
+    colors = ["#90A4AE", "#EF9A9A", "#1565C0"]
+
+    fig, ax = plt.subplots(figsize=(8.8, 5.9))
+    bars = ax.bar(labels, values, color=colors, edgecolor="white", linewidth=0.8, width=0.55)
+
+    for bar, val in zip(bars, values):
+        ax.text(bar.get_x() + bar.get_width() / 2, val + 0.5, f"{val:.1f}%", ha="center", va="bottom", fontsize=10)
+
+    ax.set_ylabel("TruthfulQA accuracy (%)", fontsize=11)
+    ax.set_title("Figure 4: 3B Transparency Ablation", fontsize=12, fontweight="bold")
+    ax.grid(axis="y", alpha=0.25)
+    ax.set_ylim(min(values) - 4.0, max(values) + 6.5)
+
+    fig.text(
+        0.5,
+        0.01,
+        "Caption: CURED gain at 3B depends on cross-scale R^2 calibration. "
+        "With native 3B profiling, gain collapses.",
+        ha="center",
+        va="bottom",
+        fontsize=9,
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    save_figure(fig, "fig4_3b_profile_transparency.png")
 
 
 if __name__ == "__main__":
     if not HAS_MPL:
         raise SystemExit("matplotlib is required. Install it first.")
 
-    print("Generating paper figures...")
-    fig1_entropy_trajectory()
-    fig2_method_comparison()
-    fig3_delta_dola_sweep()
-    fig4_d2h_routing()
-    fig5_cross_model()
+    print("Generating exactly 4 requested figures...")
+    figure1_r2_vs_alta_gain()
+    figure2_entropy_curve()
+    figure3_grouped_truthfulqa()
+    figure4_transparency()
 
-    print(f"\nAll figures saved to {FIGURES}/")
-    print("Files:")
-    for f in sorted(FIGURES.glob("*.png")):
-        print(f"  {f.name}")
+    print("\nDone. Generated files:")
+    for name in [
+        "fig1_r2_vs_alta_gain.png",
+        "fig2_entropy_curve_3b.png",
+        "fig3_truthfulqa_greedy_vs_cured_v2.png",
+        "fig4_3b_profile_transparency.png",
+    ]:
+        print(f"  {name}")
