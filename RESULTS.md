@@ -1,170 +1,162 @@
-# CURED — Canonical Results
+# CURED Results
 
-> **Single source of truth.** All numbers below come from
-> `results/CANONICAL_v2/` and are fully reproducible via the pipeline in
-> `scripts/autodl/run_all_experiments.sh`.
+> This is the human-readable canonical result document. The raw source files live in `results/CANONICAL_v2/`; the full generated ledger is [all_results.md](all_results.md).
 
-## Phase 4 Main Results — CURED v2 Router (Fixed Thresholds)
+## Result Sources
 
-Router config: `configs/router_thresholds.json`
-(`tau_kappa=0.70`, `tau_ECR=0.04`, `profile_mean_r2=0.582`)
+| Source | Role |
+|---|---|
+| `results/CANONICAL_v2/main_cured_*` | Phase 4 CURED main runs. |
+| `results/CANONICAL_v2/main_greedy_*` | Greedy reference baselines. |
+| `results/CANONICAL_v2/ablation_*` | Phase 2 protocol ablations. |
+| `results/CANONICAL_v2/results_8b_factor_*` | FACTOR diagnostic runs. |
+| `results/CANONICAL_v2/statistics_table.json` | McNemar exact binomial statistics. |
+| `results/CANONICAL_v2/r2_scale_correlation.json` | Scale-level R2 correlation. |
+| `all_results.md` | Auto-generated inventory from every JSON under `results/`. |
 
-| Model | Benchmark | n | Acc (CURED v2) | Runtime |
-|---|---|---|---|---|
-| Llama-3.2-3B | TruthfulQA | 500 | **60.6%** | 54 min |
-| Llama-3.2-3B | MedHallu | 500 | **49.9%** | 52 min |
-| Llama-3.2-3B | StrategyQA | 500 | **62.4%** | 4 min |
-| Llama-3.1-8B | TruthfulQA | 500 | **60.2%** | 66 min |
-| Llama-3.1-8B | MedHallu | 500 | **50.2%** | 55 min |
-| Llama-3.1-8B | StrategyQA | 500 | **72.2%** | 5 min |
+When this document and the generated ledger disagree, prefer this document and the named JSON files above.
 
-## Router v1 vs v2 — 8B TruthfulQA
+## 1. Main CURED V2 Results
 
-| Router version | File | n | Acc |
+Router config: `configs/router_thresholds.json`.
+
+| Benchmark | 3B | 8B | 14B | 32B |
+|---|---:|---:|---:|---:|
+| TruthfulQA, cosine, n=500 | 60.6% | 60.2% | 64.0% | 60.1% |
+| MedHallu, cosine, n=500 | 49.9% | 50.2% | 53.4% | 54.2% |
+| StrategyQA, yes/no, n=500 | 62.4% | 72.2% | 70.0% | 76.4% |
+
+| Model | Benchmark | File | Routing Summary |
 |---|---|---|---|
-| v1 (old thresholds: tau_kappa=0.08, tau_ECR=0.10) | `main_cured_old_8b_truthfulqa_n500.json` | 500 | 62.9% |
-| v2 (fixed thresholds: tau_kappa=0.70, tau_ECR=0.04) | `main_cured_8b_truthfulqa_n500_v2.json` | 500 | **60.2%** |
+| 3B | TruthfulQA | `main_cured_3b_truthfulqa_n500_v2.json` | 70.8% ALTA shortcut, 25.6% greedy fallback. |
+| 8B | TruthfulQA | `main_cured_8b_truthfulqa_n500_v2.json` | 66.8% ALTA shortcut, 30.2% greedy fallback. |
+| 3B | MedHallu | `main_cured_3b_medhallu_n500_v2.json` | Mostly greedy fallback, 20.6% ALTA shortcut. |
+| 8B | MedHallu | `main_cured_8b_medhallu_n500_v2.json` | Mostly greedy fallback, 20.8% ALTA shortcut. |
+| 3B | StrategyQA | `main_cured_3b_strategyqa_n500_v2.json` | Mixed greedy confidence, ALTA shortcut, and fallback. |
+| 8B | StrategyQA | `main_cured_8b_strategyqa_n500_v2.json` | 66.6% ALTA shortcut. |
 
-> Note: v2 shows different routing behaviour (more ALTA + scale-adaptive shortcut)
-> vs v1 (was incorrectly passing near nobody through Gate 2).
+## 2. Greedy Reference Baselines
 
-## Greedy Baseline
+| Model | Benchmark | n | Greedy | File |
+|---|---|---:|---:|---|
+| 3B | TruthfulQA | 817 | 50.1% | `main_greedy_3b_truthfulqa_n817.json` |
+| 8B | TruthfulQA | 817 | 49.6% | `main_greedy_8b_truthfulqa_n817.json` |
+| 14B | TruthfulQA | 817 | 62.2% | `main_greedy_14b_truthfulqa_n817.json` |
+| 32B | TruthfulQA | 817 | 58.8% | `main_greedy_32b_truthfulqa_n817.json` |
+| 3B | StrategyQA | 500 | 65.0% | `main_greedy_3b_strategyqa_n500.json` |
 
-| Model | Benchmark | n | Acc (Greedy) | File |
-|---|---|---|---|---|
-| Llama-3.2-3B | TruthfulQA | 817 | 50.1% | `main_greedy_3b_truthfulqa_n817.json` |
-| Llama-3.2-3B | StrategyQA | 500 | 65.0% | `main_greedy_3b_strategyqa_n500.json` |
-| Llama-3.1-8B | TruthfulQA | 817 | 49.6% | `main_greedy_8b_truthfulqa_n817.json` |
-| Qwen-14B | TruthfulQA | 817 | 62.2% | `main_greedy_14b_truthfulqa_n817.json` |
-| Qwen-32B | TruthfulQA | 817 | 58.8% | `main_greedy_32b_truthfulqa_n817.json` |
+TruthfulQA statistics use the first matched 500 questions when pairing `n=817` greedy references with `n=500` CURED runs.
 
-## Phase 4 — Prior Runs (Older Router, for reference)
+## 3. Phase 2 Protocol Ablations
 
-| Model | Benchmark | Acc | File |
-|---|---|---|---|
-| Llama-3.2-3B | TruthfulQA | 51.6% | `main_cured_3b_truthfulqa_n500.json` |
-| Llama-3.2-3B | MedHallu | 47.5% | `main_cured_3b_medhallu_n500.json` |
-| Llama-3.1-8B | TruthfulQA | 49.8% | `main_cured_8b_truthfulqa_n500.json` |
-| Llama-3.1-8B | MedHallu | 48.3% | `main_cured_8b_medhallu_n500.json` |
-| Qwen-14B | TruthfulQA | 64.0% | `main_cured_14b_truthfulqa_n500.json` |
-| Qwen-32B | TruthfulQA | 60.1% | `main_cured_32b_truthfulqa_n500.json` |
+TruthfulQA ablations use cosine scoring with `n=200`.
 
-## Phase 2 Ablations — Protocol Comparison (8B, n=200)
+| Protocol | 3B | 8B | 14B | 32B |
+|---|---:|---:|---:|---:|
+| Greedy | 56.5% | 48.0% | 64.5% | 57.6% |
+| ALTA | 59.0% | 60.6% | 57.9% | 58.0% |
+| CoVe | 46.0% | 39.2% | 45.5% | 49.8% |
+| ITI | 56.5% | 57.5% | 67.0% | 64.3% |
 
-| Protocol | TruthfulQA Acc | MedHallu Acc |
+MedHallu ablations use cosine scoring with `n=200`.
+
+| Protocol | 3B | 8B | 14B | 32B |
+|---|---:|---:|---:|---:|
+| Greedy | 55.0% | 45.5% | 54.0% | 53.0% |
+| ALTA | 58.0% | 59.8% | 57.5% | 60.0% |
+| CoVe | 47.7% | 42.4% | 60.0% | 53.0% |
+| ITI | 53.0% | 61.1% | 63.0% | 61.3% |
+
+## 4. FACTOR Diagnostics
+
+| Benchmark | File | Greedy | ALTA | CURED | Routing |
+|---|---|---:|---:|---:|---|
+| FACTOR-News, n=200 | `results_8b_factor_news_n200.json` | 59.0% | 69.0% | 61.5% | 27.5% ALTA shortcut, 72.5% greedy fallback. |
+| FACTOR-Wiki original, n=200 | `results_8b_factor_wiki_n200.json` | 29.0% | 64.0% | 43.0% | Diagnostic regression from domain misclassification. |
+| FACTOR-Wiki fixed, n=200 | `results_8b_factor_wiki_n200_fixed.json` | 29.5% | 65.0% | 65.0% | 100% ALTA shortcut. |
+
+The fixed FACTOR-Wiki run follows two changes:
+
+1. `detect_domain()` now uses word-boundary keyword matching, avoiding false medical matches such as `general` containing `gene`.
+2. `configs/router_thresholds_factor.json` sets only `tau_H_easy` to `0.0`.
+
+## 5. Medical QA And Other 8B Custom Runs
+
+These are separate local protocols and should not be mixed with external ALTA MedQA/PubMedQA numbers.
+
+| Benchmark | File | Scoring | n | Greedy | ALTA | CoVe | CURED |
+|---|---|---|---:|---:|---:|---:|---:|
+| MedQA v3-fixed | `results_8b_medqa_v3_fixed.json` | letter | 100 | 55.0% | 57.0% | 35.0% | 57.0% |
+| PubMedQA v2 | `results_8b_pubmedqa_v2.json` | yes/no | 100 | 55.0% | 53.0% | 57.0% | 53.0% |
+| TriviaQA v1 | `results_8b_triviaqa_v1.json` | cosine | 1000 | 18.4% | 18.3% | 15.1% | 18.1% |
+
+## 6. Statistical Tests
+
+McNemar exact binomial tests come from `results/CANONICAL_v2/statistics_table.json`.
+
+| Comparison | Greedy | CURED | Delta | p_exact | Discordant | Significant |
+|---|---:|---:|---:|---:|---:|---|
+| 3B TruthfulQA | 51.8% | 60.2% | +8.4 pp | <0.0001 | 74/500 | yes |
+| 8B TruthfulQA | 48.2% | 60.0% | +11.8 pp | <0.0001 | 89/500 | yes |
+| 14B TruthfulQA | 63.6% | 64.0% | +0.4 pp | 0.8600 | 32/500 | no |
+| 32B TruthfulQA | 59.8% | 59.6% | -0.2 pp | 1.0000 | 1/500 | no |
+| 3B StrategyQA | 65.0% | 62.4% | -2.6 pp | 0.0984 | 53/500 | no |
+
+## 7. R2 Analyses
+
+| Analysis | r | p | Interpretation |
+|---|---:|---:|---|
+| Scale-level R2 vs ALTA gain | 0.9859 | 0.0141 | Scale-level profile predicts whether ALTA is viable. |
+| Per-question R2 vs per-question gain | 0.0393 | 0.5803 | Per-question R2 does not predict individual gains. |
+
+Source files:
+
+| File | Purpose |
+|---|---|
+| `r2_scale_correlation.json` | Scale-level and per-question summary. |
+| `r2_stratified_analysis.json` | R2 quartiles and point-biserial analysis. |
+| `profile_3b.json`, `profile_8b.json`, `profile_14b.json`, `profile_32b.json` | Mechanistic profiles by scale. |
+
+## 8. Known Diagnostic Runs
+
+| Diagnostic | File | Result |
 |---|---|---|
-| Greedy | 48.0% | 45.5% |
-| ALTA | 60.6% | 59.8% |
-| CoVe | 39.2% | 42.4% |
-| ITI | 57.5% | 61.1% |
+| 3B native profile ablation | `main_cured_3b_truthfulqa_n500_v2_native_profile.json` | 49.4%, showing the 3B TruthfulQA gain depends on the 8B-calibrated global scale shortcut. |
+| Old 8B router | `main_cured_old_8b_truthfulqa_n500.json` | Kept for history; not the v2 headline result. |
+| Semantic entropy gate | `semantic_entropy_gate_comparison.json` | MedHallu n=50: greedy 34.0%, ECR gate 34.0%, semantic entropy gate 44.0%. |
 
-> Source: `results/CANONICAL_v2/ablation_8b_*_n200.json`
+## 9. Reproduce And Regenerate
 
-
-## FACTOR Benchmarks (8B, letter scoring, max_new_tokens=5)
-
-| Benchmark | Protocol | Acc | n_scored | Runtime |
-|---|---|---|---|---|
-| FACTOR-News | greedy | 59.0% | 200 | 1.39 min |
-| FACTOR-News | alta | **69.0%** | 200 | 1.99 min |
-| FACTOR-News | cured | 61.5% | 200 | 1.57 min |
-| FACTOR-Wiki | greedy | 29.0% | 200 | 1.70 min |
-| FACTOR-Wiki | alta | **64.0%** | 200 | 2.25 min |
-| FACTOR-Wiki | cured | 43.0% | 200 | 1.89 min |
-
-> **FACTOR-Wiki regression (CURED 43% vs ALTA 64%) — root cause:**
-> FACTOR-Wiki prompts are high-confidence text completions (low H_final ≤ 0.5).
-> Gate 1 is inactive for 8B (requires SC_q, omitted via `--skip-sc`), so the
-> scale-aware shortcut condition `H_final > tau_H_easy (0.5)` is also False for
-> these questions. They fall through to `greedy_gate5`, returning greedy's 29%.
-> Questions with H_final > 0.5 correctly reach ALTA via the shortcut.
-> The mix produces 43%. Raising `tau_H_easy` to 1.0 or enabling `--compute-sc`
-> would route low-entropy FACTOR-Wiki questions to `greedy_confident` (Gate 1)
-> rather than `greedy_gate5`. See `configs/router_thresholds.json`.
-
-## Semantic Entropy Ablation (8B, MedHallu, n=50, k=5)
-
-- Greedy **34.0%** vs ECR-gate **34.0%** vs SE-gate **44.0%**
-- SE-gate gain: **+10.0 pp** — SE-based routing significantly outperforms ECR for medical QA
-- `results/CANONICAL_v2/semantic_entropy_gate_comparison.json`
-
-## McNemar Paired Statistics (Exact Binomial, α=0.05)
-
-| Comparison | Baseline | CURED v2 | Δ pp | p (exact) | Sig? | n | b | c |
-|---|---|---|---|---|---|---|---|---|
-| 3B TruthfulQA | 51.8% (greedy n=817) | 60.2% | **+8.4** | < 0.0001 | **YES** | 500 | 16 | 58 |
-| 8B TruthfulQA | 48.2% (greedy n=817) | 60.0% | **+11.8** | < 0.0001 | **YES** | 500 | 15 | 74 |
-| 3B MedHallu | 55.0% (ablation n=200) | 52.5% | −2.5 | 0.458 | no | 200 | 17 | 12 |
-| 8B MedHallu | 45.5% (ablation n=200) | 49.0% | +3.5 | 0.167 | no | 200 | 6 | 13 |
-
-> `b` = greedy correct, CURED wrong; `c` = greedy wrong, CURED correct; Δ = c − b discordant pairs.
-> MedHallu baselines use `ablation_*_greedy_medhallu_n200.json` (n=200 matched); lower power than TruthfulQA comparisons.
-
-- `results/CANONICAL_v2/stats_3b_tqa_v2.json` — 3B TruthfulQA full output
-- `results/CANONICAL_v2/stats_8b_tqa_v2.json` — 8B TruthfulQA full output
-- `results/CANONICAL_v2/stats_3b_med_v2.json` — 3B MedHallu full output
-- `results/CANONICAL_v2/stats_8b_med_v2.json` — 8B MedHallu full output
-- `results/CANONICAL_v2/statistics_table.json` — auto-scan pairs (v2-aware; `_strip_n_suffix` fixed)
-- `results/CANONICAL_v2/r2_stratified_analysis.json` — R² quartile vs ALTA accuracy
-
-> **Issue 2 root-cause fixed** (`compute_final_stats.py`): `_strip_n_suffix` now strips both
-> `_v<N>` then `_n<N>` so v2 files match greedy files in auto-scan mode. Prior runs produced
-> zero auto-scan pairs for v2 files.
-
-## 3B Native Viability Profile (TruthfulQA, n=500)
-
-Same model and seeds as v2 main, but `configs/router_thresholds_3b.json` with
-`profile_mean_r2=0.501` so `alta_globally_viable=False` (scale shortcut disabled).
-
-| Run | Acc | Runtime | File |
-|---|---|---|---|
-| CURED v2 (8B-calibrated profile) | **60.6%** | ~54 min | `main_cured_3b_truthfulqa_n500_v2.json` |
-| CURED + 3B-native profile | **49.4%** | ~36 min | `main_cured_3b_truthfulqa_n500_v2_native_profile.json` |
-
-This isolates how much 3B TruthfulQA improvement depends on the global viability shortcut
-when `profile_mean_r2` is taken from 8B profiling (`0.582`) vs 3B (`0.501`).
-
-## Reproducing Results
+Run the full GPU suite:
 
 ```bash
-# Full pipeline on A100/A800 (run from repo root):
 bash scripts/autodl/run_all_experiments.sh
+```
 
-# Quick smoke test (Gate 2 verification, n=20):
+Regenerate derived result documents:
+
+```bash
+python compute_final_stats.py \
+  --results-dir results/CANONICAL_v2 \
+  --output results/CANONICAL_v2/statistics_table.json
+
+python experiments/compute_scale_r2_correlation.py
+python scripts/build_all_results_md.py
+```
+
+Run the fixed FACTOR-Wiki diagnostic:
+
+```bash
 python cured.py \
-  --model meta-llama/Llama-3.1-8B-Instruct --load-in-4bit \
-  --protocols cured --router new \
-  --router-config configs/router_thresholds.json \
-  --benchmark truthfulqa --n 20 --save-per-question \
-  --out /tmp/smoke_test.json
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --load-in-4bit \
+  --protocols greedy,alta,cured \
+  --router new \
+  --router-config configs/router_thresholds_factor.json \
+  --benchmark custom \
+  --custom-csv benchmarks/factor_wiki_n200.csv \
+  --scoring letter \
+  --max-new-tokens 5 \
+  --n 200 --seed 42 \
+  --out results/CANONICAL_v2/results_8b_factor_wiki_n200_fixed.json
 ```
-
-## Threshold Configuration
-
-See `configs/router_thresholds.json` for all router thresholds.
-Critical calibrated values (corrected from README Bug A):
-
-```json
-{
-  "tau_kappa":       0.70,
-  "tau_ECR":         0.04,
-  "tau_R2":          0.65,
-  "tau_H_easy":      0.5,
-  "tau_H_hard":      3.0,
-  "profile_mean_r2": 0.582
-}
-```
-
-**Known config limitations (disclosed for paper):**
-
-- **Bug B (profile scale):** `profile_mean_r2=0.582` is calibrated from 8B profiling and applied
-  to all model scales. The 3B-native value is 0.501 (< 0.55 viability threshold), which would
-  disable the scale shortcut for 3B. `configs/router_thresholds_3b.json` provides the 3B-native
-  config for ablation.
-- **Bug C (tau_R2):** With `tau_R2=0.65` and empirical per-question R²_q mean ≈ 0.50 at 3B/8B,
-  Gates 2 and 4 fire on fewer than ~5% of questions. The scale-aware shortcut (between Gates 1
-  and 2) handles the majority of ALTA routing at these scales.
-- **Gate 1 inactive (Issue 5):** For models ≤14B, Gate 1 requires SC_q (self-consistency). Phase 4
-  runs omit `--compute-sc` for efficiency; Gate 1 is therefore inactive for all canonical 3B/8B
-  results. Models >14B use `H_final < tau_H_easy` only (SC not required).
-- **Figure 4 transparency caption:** "CURED gain at 3B depends on cross-scale R² calibration. With native 3B profiling, gain collapses."

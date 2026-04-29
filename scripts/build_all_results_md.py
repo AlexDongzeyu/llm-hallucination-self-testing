@@ -125,6 +125,16 @@ def _infer_scale_tag(payload: dict[str, Any], filename: str) -> str:
     return "?"
 
 
+def _main_cured_priority(path: Path) -> int:
+    """Rank main CURED files for headline tables."""
+    stem = path.stem
+    if "old_" in stem or "native_profile" in stem:
+        return -1
+    if stem.endswith("_v2"):
+        return 2
+    return 1
+
+
 def _pivot_table(
     title: str,
     rows: list[dict[str, Any]],
@@ -329,7 +339,8 @@ def main() -> None:
     pivot_profiles: list[dict[str, Any]] = []
     # Phase 4: CURED accuracy by (scale, benchmark) and greedy accuracy by scale
     pivot_main_cured: dict[tuple[str, str], str] = {}   # (scale, bench) -> acc
-    pivot_main_greedy: dict[str, str] = {}              # scale -> acc (truthfulqa only)
+    pivot_main_cured_priority: dict[tuple[str, str], int] = {}
+    pivot_main_greedy: dict[tuple[str, str], str] = {}   # (scale, bench) -> acc
 
     for p in canonical_files:
         payload = payloads[p]
@@ -373,10 +384,15 @@ def main() -> None:
                         pivot_medhallu_n200.append(item)
 
                 # Phase 4 CURED new-router pivot
-                if (p.name.startswith("main_cured_") and "old_" not in p.name
-                        and str(proto) == "cured"):
+                if p.name.startswith("main_cured_") and str(proto) == "cured":
+                    priority = _main_cured_priority(p)
+                    if priority < 0:
+                        continue
                     bench_label = "strategyqa" if str(bench) == "custom" else str(bench)
-                    pivot_main_cured[(scale, bench_label)] = _fmt_pct(acc)
+                    key = (scale, bench_label)
+                    if priority > pivot_main_cured_priority.get(key, -1):
+                        pivot_main_cured[key] = _fmt_pct(acc)
+                        pivot_main_cured_priority[key] = priority
 
                 # Phase 4 greedy baseline pivot (truthfulqa only)
                 if p.name.startswith("main_greedy_") and str(proto) == "greedy":

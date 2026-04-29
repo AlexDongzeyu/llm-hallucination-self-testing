@@ -1,78 +1,92 @@
 # CURED: Curvature-Informed Routing and Entropy-Based Decoding
 
-> A principled 5-gate router that selects greedy, ALTA, CoVe, or ITI decoding **per question** using three lightweight trajectory features (R², κ, ECR), reducing hallucinations without the overhead of always-on techniques.
+> CURED is a test-time routing framework for hallucination reduction. It selects greedy, ALTA, CoVe, or ITI per question using lightweight trajectory features: R2, kappa, ECR, entropy, self-consistency when enabled, and domain routing.
 
-## Key Results (CUREDRouterV2, fixed thresholds)
+## Source Of Truth
 
-| Model | Benchmark | Greedy | CURED v2 | Δ |
-|---|---|---|---|---|
-| Llama-3.2-3B | TruthfulQA | 50.1% | **60.6%** | +10.5 pp |
-| Llama-3.1-8B | TruthfulQA | 49.6% | **60.2%** | +10.6 pp |
-| Llama-3.2-3B | MedHallu (n=500) | — | **49.9%** | — |
-| Llama-3.1-8B | MedHallu (n=500) | — | **50.2%** | — |
-| Llama-3.2-3B | StrategyQA | 65.0% | **62.4%** | −2.6 pp |
-| Llama-3.1-8B | StrategyQA | 72.2% | **72.2%** | 0.0 pp |
-| Qwen2.5-14B-Instruct | TruthfulQA | 62.2% | **64.0%** | +1.8 pp |
-| Qwen2.5-32B-Instruct | TruthfulQA | 58.8% | **60.1%** | +1.3 pp |
+| Document | Purpose |
+|---|---|
+| [RESULTS.md](RESULTS.md) | Human-readable canonical result narrative and caveats. |
+| [all_results.md](all_results.md) | Auto-generated ledger from `results/**/*.json`. |
+| [experiments/README.md](experiments/README.md) | Phase-by-phase experiment guide and script index. |
+| [scripts/autodl/QUICKSTART.md](scripts/autodl/QUICKSTART.md) | GPU runner quickstart. |
+| `results/CANONICAL_v2/` | Canonical JSON outputs used by the docs. |
 
-TruthfulQA greedy columns use the full **n=817** MC1-style reference runs; CURED v2 uses **n=500** with fixed seed (see `results/CANONICAL_v2/`). MedHallu rows report CURED main only (no separate greedy n=500 in the canonical bundle; ablation slices at n=200 are in [RESULTS.md](RESULTS.md)).
+The public repository is [AlexDongzeyu/llm-hallucination-self-testing](https://github.com/AlexDongzeyu/llm-hallucination-self-testing).
 
----
+## Headline Results
 
-## Repository structure
+Canonical CURED v2 main runs use fixed thresholds and `n=500` unless noted.
 
-```
-cured-decoding-router/
-├── cured/                        # Python package
-├── cured.py                      # CLI entry point
-├── calibrate_router.py
-├── compute_final_stats.py
-├── experiments/
-│   ├── README.md
-│   ├── compute_logit_linearity.py
-│   ├── run_alta_3b.py
-│   ├── run_delta_dola_sweep.py
-│   ├── run_semantic_entropy_ablation.py
-│   ├── generate_paper_figures.py
-│   ├── build_routing_dataset.py
-│   └── …
+| Benchmark | 3B | 8B | 14B | 32B |
+|---|---:|---:|---:|---:|
+| TruthfulQA, CURED v2 | 60.6% | 60.2% | 64.0% | 60.1% |
+| MedHallu, CURED v2 | 49.9% | 50.2% | 53.4% | 54.2% |
+| StrategyQA, CURED v2 | 62.4% | 72.2% | 70.0% | 76.4% |
+| TruthfulQA greedy baseline, n=817 | 50.1% | 49.6% | 62.2% | 58.8% |
+
+TruthfulQA greedy baselines are full `n=817` reference runs. CURED v2 rows are fixed-seed `n=500` generation runs from `results/CANONICAL_v2/`.
+
+## 8B Diagnostic Results
+
+| Benchmark | Scoring | Greedy | ALTA | CURED | Note |
+|---|---|---:|---:|---:|---|
+| FACTOR-News, n=200 | letter | 59.0% | 69.0% | 61.5% | Existing canonical run. |
+| FACTOR-Wiki fixed, n=200 | letter | 29.5% | 65.0% | 65.0% | Domain word-boundary fix; 100% `alta_global_viable`. |
+| MedQA v3-fixed, n=100 | letter | 55.0% | 57.0% | 57.0% | Free-form local split; not comparable to ALTA MedQA protocol. |
+| PubMedQA v2, n=100 | yes/no | 55.0% | 53.0% | 53.0% | Local yes/no protocol. |
+| TriviaQA v1, n=1000 | cosine | 18.4% | 18.3% | 18.1% | Retrieval-free trivia baseline. |
+
+## Statistical Summary
+
+| Comparison | Greedy | CURED | Delta | p_exact | Significant |
+|---|---:|---:|---:|---:|---|
+| 3B TruthfulQA | 51.8% | 60.2% | +8.4 pp | <0.0001 | yes |
+| 8B TruthfulQA | 48.2% | 60.0% | +11.8 pp | <0.0001 | yes |
+| 14B TruthfulQA | 63.6% | 64.0% | +0.4 pp | 0.8600 | no |
+| 32B TruthfulQA | 59.8% | 59.6% | -0.2 pp | 1.0000 | no |
+| 3B StrategyQA | 65.0% | 62.4% | -2.6 pp | 0.0984 | no |
+
+Scale-level R2 predicts ALTA regime viability: Pearson `r=0.9859`, `p=0.0141`. Per-question R2 does not predict per-question gain: `r=0.0393`, `p=0.5803`.
+
+## Repository Layout
+
+```text
+llm-hallucination-self-testing/
+├── cured/                         # Python package API
+├── cured.py                       # Main CLI entry point
+├── calibrate_router.py            # Router threshold calibration
+├── compute_final_stats.py         # McNemar and R2 stratified statistics
+├── configs/                       # Router threshold JSON files
+├── benchmarks/                    # Local benchmark CSVs
+├── experiments/                   # Research scripts and figure builders
 ├── scripts/
-│   ├── autodl/                   # GPU pipeline (run_all_experiments.sh, …)
-│   ├── prep_benchmarks.py
-│   ├── prep_factor_benchmark.py
-│   ├── rebuild_*_csv.py
-│   ├── build_all_results_md.py
-│   └── run_all_local.ps1
-├── benchmarks/
-├── configs/                      # router_thresholds.json (+ router_thresholds_3b.json)
-├── results/CANONICAL_v2/
-├── paper/figures/                # fig1–fig5 (see also results/figures/)
-├── data/
+│   ├── autodl/                    # GPU runner scripts
+│   └── build_all_results_md.py    # all_results.md generator
+├── results/CANONICAL_v2/          # Canonical result JSON files
+├── paper/figures/                 # Paper figure assets
 ├── README.md
 ├── RESULTS.md
+├── all_results.md
 ├── PAPER.md
-├── requirements.txt
-└── LICENSE
+└── requirements.txt
 ```
-
----
 
 ## Installation
 
 ```bash
-git clone https://github.com/your-org/cured-decoding-router.git
-cd cured-decoding-router
+git clone https://github.com/AlexDongzeyu/llm-hallucination-self-testing.git
+cd llm-hallucination-self-testing
 pip install -r requirements.txt
 ```
 
-GPU requirements: ≥ 24 GB VRAM for 8B models (4-bit), ≥ 40 GB for 32B models.
-
----
+GPU guidance: 8B 4-bit runs fit on the local 8 GB GPU used for the FACTOR rerun, but full canonical sweeps are intended for A100/A800-class machines. Larger 14B/32B runs need substantially more VRAM.
 
 ## Quickstart
 
+Run CURED on TruthfulQA:
+
 ```bash
-# Run CURED router on TruthfulQA (n=100, 8B model)
 python cured.py \
   --model meta-llama/Llama-3.1-8B-Instruct \
   --load-in-4bit \
@@ -80,139 +94,65 @@ python cured.py \
   --router new \
   --router-config configs/router_thresholds.json \
   --benchmark truthfulqa \
+  --scoring cosine \
   --n 100 --seed 42 \
   --save-per-question \
   --out results/my_run.json
+```
 
-# Compare protocols side-by-side
+Reproduce the fixed FACTOR-Wiki diagnostic:
+
+```bash
 python cured.py \
   --model meta-llama/Llama-3.1-8B-Instruct \
   --load-in-4bit \
   --protocols greedy,alta,cured \
-  --benchmark medhallu \
-  --n 50 --skip-iti \
-  --out results/comparison.json
+  --router new \
+  --router-config configs/router_thresholds_factor.json \
+  --benchmark custom \
+  --custom-csv benchmarks/factor_wiki_n200.csv \
+  --scoring letter \
+  --max-new-tokens 5 \
+  --n 200 --seed 42 \
+  --out results/CANONICAL_v2/results_8b_factor_wiki_n200_fixed.json
 ```
 
----
+## Router Summary
 
-## Python API
-
-```python
-from cured import CUREDRouterV2
-from cured.calibration import measure_r2
-from cured.scoring import cosine_match
-
-# Load model (standard HuggingFace)
-from transformers import AutoModelForCausalLM, AutoTokenizer
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
-
-# Calibrate and build router
-r2 = measure_r2(model, tokenizer, n_questions=15)
-router = CUREDRouterV2(model, tokenizer)
-
-# Route a question
-result = router.route(
-    prompt="Answer concisely: What is the capital of France?",
-    question="What is the capital of France?",
-)
-print(result["text"])       # → "Paris"
-print(result["strategy"])   # → "greedy_confident" / "alta_global_viable" / …
+```text
+Question
+  -> features: R2, kappa, ECR, H_final, SC, domain
+  -> Gate 1: low entropy confidence path
+  -> Scale shortcut: profile_mean_r2 >= 0.55 and non-medical -> ALTA
+  -> Gate 2: per-question linearity predicate
+  -> Gate 3: medical + ITI available
+  -> Gate 4: composite ALTA score
+  -> Gate 5: medical CoVe fallback or greedy fallback
 ```
 
----
+Canonical thresholds live in `configs/router_thresholds.json`. FACTOR-Wiki uses `configs/router_thresholds_factor.json`, which only changes `tau_H_easy` to `0.0`.
 
-## 5-Phase experiment pipeline
-
-| Phase | Description | Key script |
-|---|---|---|
-| **Phase 1** | Measure logit linearity (R²) per model | `experiments/compute_logit_linearity.py` |
-| **Phase 2** | Protocol ablations (greedy/ALTA/CoVe/ITI) | `scripts/autodl/run_phase2_ablations.sh` |
-| **Phase 3** | Calibrate router thresholds | `calibrate_router.py` |
-| **Phase 4** | Main CURED v2 evaluation (n=500) | `scripts/autodl/run_all_experiments.sh` |
-| **Phase 5** | Statistics + R²-stratified analysis | `compute_final_stats.py` |
-
-Full pipeline (A100/A800):
+## Documentation Workflow
 
 ```bash
-bash scripts/autodl/run_all_experiments.sh
+python compute_final_stats.py \
+  --results-dir results/CANONICAL_v2 \
+  --output results/CANONICAL_v2/statistics_table.json
+
+python experiments/compute_scale_r2_correlation.py
+python scripts/build_all_results_md.py
 ```
 
----
-
-## Router architecture
-
-```
-Question → extract (R², κ, ECR, H_final, SC, domain)
-                │
-    ┌────────────────────────────────────────────────────────────┐
-    │ Gate 1: H_final < τ_H_easy and (SC rules for ≤14B)         │ → greedy_confident
-    │ Note: inactive for ≤14B in Phase 4 (--compute-sc omitted) │
-    └────────────────────────────────────────────────────────────┘
-                │ (not fired)
-    ┌───────────▼────────────────────────────────────────┐
-    │ Scale: profile_mean_r2 ≥ 0.55, not med, H_final > τ_H_easy │ → alta_global_viable
-    └────────────────────────────────────────────────────┘
-                │
-    ┌───────────▼──────────────────────────────────────────────────┐
-    │ Gate 2: R²_q > τ_R2, κ_q < τ_kappa, ECR_q > τ_ECR          │ → continue (ALTA path)
-    └──────────────────────────────────────────────────────────────┘
-                │
-    ┌───────────▼──────────────────────┐
-    │ Gate 3: medical and ITI available│ → iti_medical_gate3
-    └──────────────────────────────────┘
-                │
-    ┌───────────▼──────────────────────────────┐
-    │ Gate 4: composite S_ALTA > 0.5           │ → alta_gate4
-    └──────────────────────────────────────────┘
-                │
-    ┌───────────▼──────────────────────┐
-    │ Gate 5: medical and SC > 0.5     │ → cove_gate5_medical
-    │         else                     │ → greedy_gate5
-    └──────────────────────────────────┘
-```
-
----
-
-## Threshold configuration
-
-All thresholds in `configs/router_thresholds.json`:
-
-```json
-{
-  "tau_kappa":        0.70,
-  "tau_ECR":          0.04,
-  "tau_R2":           0.65,
-  "tau_H_easy":       0.5,
-  "tau_H_hard":       3.0,
-  "tau_SC_easy":      0.90,
-  "tau_SC_hard":      0.60,
-  "profile_mean_r2":  0.582
-}
-```
-
-> **Implementation notes:**
-> - `tau_R2 = 0.65` means the strict per-question Gate 2 predicate `R²_q > tau_R2` fires on a small fraction of questions at 3B/8B; the scale shortcut routes most general-domain ALTA traffic.
-> - `profile_mean_r2 = 0.582` comes from 8B profiling and is reused for all scales in Phase 4. Use `configs/router_thresholds_3b.json` for the native 3B profile ablation (see [RESULTS.md](RESULTS.md)).
-> - Gate 1 requires `SC_q` for models ≤14B; Phase 4 omits `--compute-sc`, so Gate 1 is **inactive** for canonical 3B/8B. Models >14B use `H_final < tau_H_easy` only.
-
----
-
-## MC scoring note
-
-TruthfulQA MC1/MC2 scores require `--scoring mc` and the full MC answer set. Default cosine scoring with `--scoring cosine` is the recommended mode for generation evaluation and is used in all canonical results above.
-
----
+After result JSONs change, regenerate the statistics and `all_results.md`, then update `RESULTS.md` if the human-facing narrative changed.
 
 ## Citation
 
 ```bibtex
 @misc{cured2026,
-  title   = {{CURED}: Curvature-Informed Routing and Entropy-Based Decoding},
-  author  = {Author, A. and Author, B.},
-  year    = {2026},
-  url     = {https://github.com/your-org/cured-decoding-router},
-  note    = {Preprint}
+  title  = {{CURED}: Curvature-Informed Routing and Entropy-Based Decoding},
+  author = {Dong, Alex},
+  year   = {2026},
+  url    = {https://github.com/AlexDongzeyu/llm-hallucination-self-testing},
+  note   = {Research code and experimental report}
 }
 ```

@@ -2,6 +2,8 @@
 
 Last sync: 2026-04-05
 
+> Legacy archive only. Current canonical results live in `../CANONICAL_v2/`, with the organized narrative in `../../RESULTS.md` and the generated ledger in `../../all_results.md`.
+
 This file is a short summary. Full detail is in `../raw_results.md`.
 
 ## Topline Summary

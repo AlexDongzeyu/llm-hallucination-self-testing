@@ -1,52 +1,44 @@
-# experiments/ — Research Experiments
+# Experiments
 
-This folder contains the per-phase research scripts that produced the results
-in the paper.  They are **not** part of the reproducible benchmark pipeline
-(which lives in `scripts/autodl/`) but document the research process.
+This folder contains research scripts used to build CURED profiles, ablations, figures, and diagnostic analyses. The current result narrative is in [../RESULTS.md](../RESULTS.md); this file documents how each phase is produced.
 
----
+## Phase Map
 
-## 5-Phase Pipeline
+| Phase | Goal | Primary Output |
+|---|---|---|
+| 1 | Measure logit linearity and entropy profiles by scale. | `results/CANONICAL_v2/profile_*.json` |
+| 2 | Run protocol ablations for greedy, ALTA, CoVe, and ITI. | `results/CANONICAL_v2/ablation_*_n200.json` |
+| 3 | Calibrate router thresholds. | `configs/router_thresholds.json` |
+| 4 | Run CURED v2 main evaluations. | `results/CANONICAL_v2/main_cured_*` |
+| 5 | Compute statistics, R2 analyses, and paper figures. | `statistics_table.json`, `r2_*`, `paper/figures/` |
 
-### Phase 1 — Logit Linearity Measurement
-
-**Goal**: Measure per-model late-layer R² to determine whether ALTA is viable.
+## Phase 1 - Logit Linearity Profiles
 
 ```bash
 python experiments/compute_logit_linearity.py \
   --model meta-llama/Llama-3.1-8B-Instruct \
-  --n 50 --out results/CANONICAL_v2/profile_8b.json
+  --n 50 \
+  --out results/CANONICAL_v2/profile_8b.json
 ```
 
-Key output: `results/CANONICAL_v2/profile_{3b,8b,14b,32b}.json`
+Canonical profile summary:
 
-Each profile contains `mean_r2`, `alta_viable`, `d2h_threshold`, `iti_available`.
+| Scale | Mean R2 | Mean kappa | Mean ECR | H_final | H_peak |
+|---|---:|---:|---:|---:|---:|
+| 3B | 0.501 | 0.455 | 0.076 | 0.837 | 11.00 |
+| 8B | 0.582 | 0.597 | 0.066 | 0.669 | 10.14 |
+| 14B | 0.444 | 0.360 | 0.031 | 0.306 | 9.73 |
+| 32B | 0.473 | 0.322 | 0.051 | 0.529 | 10.32 |
 
-**Key finding**: R² ≥ 0.55 for all tested models → ALTA globally viable.
-
----
-
-### Phase 2 — Protocol Ablations
-
-**Goal**: Establish individual protocol baselines before routing.
+## Phase 2 - Protocol Ablations
 
 ```bash
 bash scripts/autodl/run_phase2_ablations.sh
 ```
 
-Runs greedy, ALTA, CoVe, ITI, and SelfCheck on TruthfulQA and MedHallu
-(n=200, all model sizes).
+TruthfulQA and MedHallu ablations use cosine scoring with `n=200`. See [../RESULTS.md](../RESULTS.md) for the current tables.
 
-Key outputs: `results/CANONICAL_v2/ablation_*_n200.json`
-
-**Key finding**: ALTA dominates on TruthfulQA (8B: 59.3% vs greedy 43.2%).
-CoVe underperforms on general QA (8B: 39.2%) → restrict to medical domain.
-
----
-
-### Phase 3 — Router Threshold Calibration
-
-**Goal**: Calibrate τ_κ, τ_ECR, τ_R2, τ_H_easy, τ_H_hard from profile data.
+## Phase 3 - Router Calibration
 
 ```bash
 python calibrate_router.py \
@@ -54,73 +46,76 @@ python calibrate_router.py \
   --out configs/router_thresholds.json
 ```
 
-**Critical fix (Issue #1)**: Original thresholds `tau_kappa=0.08, tau_ECR=0.10`
-passed no questions through Gate 2 (mean kappa=0.597, mean ECR=0.031–0.076).
-Fixed to `tau_kappa=0.70, tau_ECR=0.04`.
+Current calibrated defaults:
 
----
+| Threshold | Value | Purpose |
+|---|---:|---|
+| `tau_R2` | 0.65 | Strict per-question linearity gate. |
+| `tau_kappa` | 0.70 | Curvature gate. |
+| `tau_ECR` | 0.04 | Entropy compression gate. |
+| `tau_H_easy` | 0.5 | Low-entropy confidence threshold. |
+| `profile_mean_r2` | 0.582 | Global scale shortcut profile. |
 
-### Phase 4 — Main CURED v2 Evaluation
-
-**Goal**: Full n=500 evaluation with the fixed router on all models and benchmarks.
+## Phase 4 - Main Evaluation
 
 ```bash
-# Full pipeline (A100/A800):
 bash scripts/autodl/run_all_experiments.sh
+```
 
-# Single model:
+Single 8B TruthfulQA example:
+
+```bash
 python cured.py \
-  --model meta-llama/Llama-3.1-8B-Instruct --load-in-4bit \
-  --protocols cured --router new \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --load-in-4bit \
+  --protocols cured \
+  --router new \
   --router-config configs/router_thresholds.json \
-  --benchmark truthfulqa --n 500 --seed 42 --no-shuffle \
-  --scoring cosine --save-per-question --skip-iti \
+  --benchmark truthfulqa \
+  --scoring cosine \
+  --n 500 --seed 42 \
+  --save-per-question \
   --out results/CANONICAL_v2/main_cured_8b_truthfulqa_n500_v2.json
 ```
 
-Key outputs: `results/CANONICAL_v2/main_cured_*_n500_v2.json`
-
----
-
-### Phase 5 — Statistics and R²-Stratified Analysis
-
-**Goal**: McNemar tests, confidence intervals, and R²-stratified ALTA analysis.
+## Phase 5 - Statistics And Figures
 
 ```bash
 python compute_final_stats.py \
   --results-dir results/CANONICAL_v2 \
   --output results/CANONICAL_v2/statistics_table.json
+
+python experiments/compute_scale_r2_correlation.py
+python experiments/generate_paper_figures.py
+python scripts/build_all_results_md.py
 ```
 
-Key outputs:
-- `statistics_table.json` — McNemar p-values, CIs, power analysis
-- `r2_stratified_analysis.json` — ALTA accuracy by R² quartile
+## Diagnostic Runs
 
----
+| Diagnostic | Script or Command | Output |
+|---|---|---|
+| Semantic entropy ablation | `run_semantic_entropy_ablation.py` | `semantic_entropy_gate_comparison.json` |
+| FACTOR benchmark prep | `scripts/prep_factor_benchmark.py` | `benchmarks/factor_*_n200.csv` |
+| FACTOR-Wiki fixed rerun | command in [../RESULTS.md](../RESULTS.md) | `results_8b_factor_wiki_n200_fixed.json` |
+| 3B native profile ablation | `configs/router_thresholds_3b.json` | `main_cured_3b_truthfulqa_n500_v2_native_profile.json` |
 
-## Experiment Scripts Reference
+## Script Reference
 
 | Script | Phase | Description |
-|---|---|---|
-| `compute_logit_linearity.py` | 1 | Per-model R² profile measurement |
-| `compute_linearity_8b_groq.py` | 1 | R² via Groq API (no local GPU) |
-| `run_alta_3b.py` | 2 | ALTA 3B standalone ablation |
-| `run_delta_dola_sweep.py` | 2 | Δ-DoLa hyperparameter sweep |
-| `run_delta_dola_complete_grid.py` | 2 | Δ-DoLa full grid |
-| `run_medhallu_ablations.py` | 2 | MedHallu protocol ablations |
-| `run_medhallu_eval.py` | 2 | MedHallu generation eval |
-| `run_medhallu_generation.py` | 2 | MedHallu generation (batch) |
-| `eval_medhallu.py` | 2 | MedHallu evaluation helper |
-| `build_routing_dataset.py` | 3 | Build routing training dataset |
-| `check_low_threshold.py` | 3 | Diagnose low-threshold issues |
-| `run_semantic_entropy_ablation.py` | 4/5 | ECR vs semantic-entropy comparison |
-| `generate_paper_figures.py` | 5 | Generate all paper figures |
-| `regenerate_figures.py` | 5 | Re-generate figures from saved data |
-| `extract_entropy_layers.py` | 5 | Extract per-layer entropy profiles |
-| `latency_benchmark.py` | 5 | Measure per-protocol latency |
-
----
-
-## Local Windows helpers
-
-For one-off local runs, see `scripts/run_all_local.ps1` and the online runner stubs under `scripts/` (Groq / Cloudflare / Foundry). The canonical reproduction path is `scripts/autodl/run_all_experiments.sh` on GPU.
+|---|---:|---|
+| `compute_logit_linearity.py` | 1 | Per-model R2 profile measurement. |
+| `compute_linearity_8b_groq.py` | 1 | API-based 8B R2 check. |
+| `compute_scale_r2_correlation.py` | 5 | Scale-level R2 correlation summary. |
+| `run_alta_3b.py` | 2 | Standalone 3B ALTA ablation. |
+| `run_delta_dola_sweep.py` | 2 | Delta-DoLa hyperparameter sweep. |
+| `run_delta_dola_complete_grid.py` | 2 | Full Delta-DoLa grid. |
+| `run_medhallu_ablations.py` | 2 | MedHallu protocol ablations. |
+| `run_medhallu_eval.py` | 2 | MedHallu evaluation helper. |
+| `run_medhallu_generation.py` | 2 | MedHallu generation batches. |
+| `build_routing_dataset.py` | 3 | Routing dataset builder. |
+| `check_low_threshold.py` | 3 | Threshold diagnosis. |
+| `run_semantic_entropy_ablation.py` | 4/5 | ECR vs semantic entropy routing comparison. |
+| `generate_paper_figures.py` | 5 | Paper figure generation. |
+| `regenerate_figures.py` | 5 | Rebuild figures from saved data. |
+| `extract_entropy_layers.py` | 5 | Per-layer entropy extraction. |
+| `latency_benchmark.py` | 5 | Protocol latency measurement. |

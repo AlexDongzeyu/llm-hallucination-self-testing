@@ -3,7 +3,7 @@
     "label": "greedy vs CURED | 14b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_14b_truthfulqa_n817.json",
+      "file": "results\\CANONICAL_v2\\main_greedy_14b_truthfulqa_n817.json",
       "accuracy": 0.636,
       "ci_95": [
         0.594,
@@ -11,7 +11,7 @@
       ]
     },
     "method": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_14b_truthfulqa_n500.json",
+      "file": "results\\CANONICAL_v2\\main_cured_14b_truthfulqa_n500.json",
       "accuracy": 0.64,
       "ci_95": [
         0.598,
@@ -36,7 +36,7 @@
     "label": "greedy vs CURED | 32b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_32b_truthfulqa_n817.json",
+      "file": "results\\CANONICAL_v2\\main_greedy_32b_truthfulqa_n817.json",
       "accuracy": 0.598,
       "ci_95": [
         0.554,
@@ -44,7 +44,7 @@
       ]
     },
     "method": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_32b_truthfulqa_n500.json",
+      "file": "results\\CANONICAL_v2\\main_cured_32b_truthfulqa_n500.json",
       "accuracy": 0.596,
       "ci_95": [
         0.552,
@@ -66,10 +66,43 @@
     "interpretation": "delta=-0.2% | p_exact=1.0000 (not sig) | discordant=1/500"
   },
   {
+    "label": "greedy vs CURED | 3b_strategyqa",
+    "n": 500,
+    "baseline": {
+      "file": "results\\CANONICAL_v2\\main_greedy_3b_strategyqa_n500.json",
+      "accuracy": 0.65,
+      "ci_95": [
+        0.608,
+        0.692
+      ]
+    },
+    "method": {
+      "file": "results\\CANONICAL_v2\\main_cured_3b_strategyqa_n500_v2.json",
+      "accuracy": 0.624,
+      "ci_95": [
+        0.582,
+        0.666
+      ]
+    },
+    "delta_pp": -2.6,
+    "mcnemar": {
+      "p_exact": 0.098371,
+      "p_chi2": 0.07415,
+      "net_gain": -13,
+      "b": 33,
+      "c": 20,
+      "n_discordant": 53,
+      "n_total": 500,
+      "significant": false
+    },
+    "power_at_n": 0.427,
+    "interpretation": "delta=-2.6% | p_exact=0.0984 (not sig) | discordant=53/500"
+  },
+  {
     "label": "greedy vs CURED | 3b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_3b_truthfulqa_n817.json",
+      "file": "results\\CANONICAL_v2\\main_greedy_3b_truthfulqa_n817.json",
       "accuracy": 0.518,
       "ci_95": [
         0.474,
@@ -77,7 +110,7 @@
       ]
     },
     "method": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_3b_truthfulqa_n500_v2.json",
+      "file": "results\\CANONICAL_v2\\main_cured_3b_truthfulqa_n500_v2.json",
       "accuracy": 0.602,
       "ci_95": [
         0.558,
@@ -102,7 +135,7 @@
     "label": "greedy vs CURED | 8b_truthfulqa",
     "n": 500,
     "baseline": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_greedy_8b_truthfulqa_n817.json",
+      "file": "results\\CANONICAL_v2\\main_greedy_8b_truthfulqa_n817.json",
       "accuracy": 0.482,
       "ci_95": [
         0.44,
@@ -110,25 +143,25 @@
       ]
     },
     "method": {
-      "file": "/root/llm-hallucination-self-testing/results/CANONICAL_v2/main_cured_8b_truthfulqa_n500.json",
-      "accuracy": 0.496,
+      "file": "results\\CANONICAL_v2\\main_cured_8b_truthfulqa_n500_v2.json",
+      "accuracy": 0.6,
       "ci_95": [
-        0.452,
-        0.54
+        0.558,
+        0.642
       ]
     },
-    "delta_pp": 1.4,
+    "delta_pp": 11.8,
     "mcnemar": {
-      "p_exact": 0.310505,
-      "p_chi2": 0.236724,
-      "net_gain": 7,
-      "b": 14,
-      "c": 21,
-      "n_discordant": 35,
+      "p_exact": 0.0,
+      "p_chi2": 0.0,
+      "net_gain": 59,
+      "b": 15,
+      "c": 74,
+      "n_discordant": 89,
       "n_total": 500,
-      "significant": false
+      "significant": true
     },
     "power_at_n": 0.427,
-    "interpretation": "delta=+1.4% | p_exact=0.3105 (not sig) | discordant=35/500"
+    "interpretation": "delta=+11.8% | p_exact=0.0000 (sig) | discordant=89/500"
   }
 ]

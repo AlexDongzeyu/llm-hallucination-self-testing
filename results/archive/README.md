@@ -1,17 +1,22 @@
-# Archive Folder
+# Results Archive
 
-Historical artifacts only. Do not use this folder as the current source of truth.
+This folder contains historical, superseded, failed, or provider-debug outputs. It is not the canonical source for current claims.
 
-## Files
+## Current Sources
 
-- `medhallu_detector_legacy_results.json`: legacy detector-style MedHallu output (comparison only).
-- `medhallu_results_snapshot_n50.json`: snapshot copy of MedHallu MC n=50 output.
+| Source | Purpose |
+|---|---|
+| `../CANONICAL_v2/` | Canonical result JSON files. |
+| `../../RESULTS.md` | Human-readable result narrative. |
+| `../../all_results.md` | Auto-generated inventory across `results/**/*.json`. |
 
-Canonical files:
-- `results/medhallu_results.json` (MC ablation)
-- `results/medhallu_generation_results.json` (primary generation metric)
-- `all_results.md` (current consolidated summary)
+## Archive Policy
 
-Additional policy:
-- Legacy API v1 outputs (for example results_openrouter_medqa.json without v2 tag)
-	should live in this archive folder.
+| File Type | Policy |
+|---|---|
+| Legacy API v1 outputs | Keep here for audit only. |
+| Failed auth/provider debug outputs | Keep here only when useful for provenance. |
+| Superseded result JSONs | Keep here if referenced by an issue or diagnostic. |
+| Canonical v2 outputs | Keep under `results/CANONICAL_v2/`, not here. |
+
+If an archived file is used in a paper or poster, label it as historical or diagnostic and cite the exact filename.

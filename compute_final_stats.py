@@ -42,13 +42,25 @@ def _strip_n_suffix(key: str) -> str:
     canonical key ``3b_truthfulqa``.
 
     Without this, v2 files (ending in ``_n500_v2``) never match greedy files
-    (ending in ``_n817``) in the auto-scan mode because ``re.sub(r"_n\d+$")``
+    (ending in ``_n817``) in the auto-scan mode because ``re.sub(r"_n\\d+$")``
     only matches at end-of-string and ``_v2`` sits after the ``_n`` token.
     """
     # Strip _v<digits> first, then _n<digits>
     key = re.sub(r"_v\d+$", "", key)
     key = re.sub(r"_n\d+$", "", key)
     return key
+
+
+def _main_cured_priority(path: str) -> int:
+    """Prefer headline CURED v2 runs over older or diagnostic main runs."""
+    if not path:
+        return -1
+    stem = Path(path).stem
+    if "old_" in stem or "native_profile" in stem:
+        return -1
+    if stem.endswith("_v2"):
+        return 2
+    return 1
 
 
 def parse_args() -> argparse.Namespace:
@@ -309,7 +321,7 @@ def r2_stratified_alta_analysis(results_dir: str, output_path: str) -> dict:
 
     results_out: dict = {}
 
-    print("\n=== R² vs ALTA Accuracy (per-question, within scale) ===")
+    print("\n=== R2 vs ALTA Accuracy (per-question, within scale) ===")
     for scale in sorted(df["scale"].unique()):
         sub = df[df["scale"] == scale]
         r, p = scipy_stats.pearsonr(sub["r2_q"], sub["alta_correct"])
@@ -318,7 +330,7 @@ def r2_stratified_alta_analysis(results_dir: str, output_path: str) -> dict:
         print(f"  {scale}: r={r:.3f}, p={p:.4f}, n={len(sub)}")
 
     df["r2_quartile"] = pd.qcut(
-        df["r2_q"], q=4, labels=["Q1 (R²<p25)", "Q2", "Q3", "Q4 (R²>p75)"]
+        df["r2_q"], q=4, labels=["Q1 (R2<p25)", "Q2", "Q3", "Q4 (R2>p75)"]
     )
     q_stats = (
         df.groupby("r2_quartile")
@@ -340,7 +352,7 @@ def r2_stratified_alta_analysis(results_dir: str, output_path: str) -> dict:
     results_out["point_biserial_p"] = round(p_pb, 6)
     print(
         f"\nPoint-biserial r(R2_q, alta_correct) = {r_pb:.4f}, p={p_pb:.6f}"
-        "\n(Positive = higher R² → more likely ALTA is correct)"
+        "\n(Positive = higher R2 -> more likely ALTA is correct)"
     )
 
     out = Path(output_path).parent / "r2_stratified_analysis.json"
@@ -369,12 +381,15 @@ def main() -> None:
             _strip_n_suffix(Path(f).stem.replace("main_greedy_", "")): f
             for f in glob.glob(str(results_dir / "main_greedy_*.json"))
         }
-        # Skip old-router files for automatic pairing (keep new router only).
-        cured_files = {
-            _strip_n_suffix(Path(f).stem.replace("main_cured_", "")): f
-            for f in glob.glob(str(results_dir / "main_cured_*.json"))
-            if "old_" not in Path(f).stem
-        }
+        # Skip old/diagnostic runs and prefer v2 when multiple files share a key.
+        cured_files: dict[str, str] = {}
+        for f in glob.glob(str(results_dir / "main_cured_*.json")):
+            priority = _main_cured_priority(f)
+            if priority < 0:
+                continue
+            key = _strip_n_suffix(Path(f).stem.replace("main_cured_", ""))
+            if priority > _main_cured_priority(cured_files.get(key, "")):
+                cured_files[key] = f
 
         if not greedy_files or not cured_files:
             print(
@@ -404,7 +419,7 @@ def main() -> None:
     out_path.write_text(json.dumps(comparisons, indent=2), encoding="utf-8")
     print(f"Saved statistics -> {out_path}")
 
-    print("\n=== R² Stratified ALTA Analysis ===")
+    print("\n=== R2 Stratified ALTA Analysis ===")
     r2_stratified_alta_analysis(args.results_dir, args.output)
 
 
