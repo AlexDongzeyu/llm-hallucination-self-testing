@@ -244,10 +244,10 @@ def get_model_device(model: Any) -> torch.device:
 
 
 def detect_domain(question: str) -> str:
-    import re
+    import re as _re
     q = question.lower()
     for k in MEDICAL_KEYWORDS:
-        if re.search(r'\b' + re.escape(k) + r'\b', q):
+        if _re.search(r'\b' + _re.escape(k) + r'\b', q):
             return "medical"
     if MED_PATTERN.search(question):
         return "medical"

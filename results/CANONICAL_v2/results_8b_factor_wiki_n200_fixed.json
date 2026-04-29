@@ -1,0 +1,63 @@
+{
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "load_in_4bit": true,
+  "protocols": [
+    "greedy",
+    "alta",
+    "cured"
+  ],
+  "benchmark": "custom",
+  "n_target": 200,
+  "seed": 42,
+  "router_version": "new",
+  "model_params_b": 0.0,
+  "max_new_tokens": 5,
+  "cosine_threshold": 0.65,
+  "scoring": "letter",
+  "calibration": {
+    "mean_r2": 0.5556583780592937,
+    "alta_viable": true,
+    "d2h_threshold": -7.610338628292084,
+    "iti_available": true
+  },
+  "results": {
+    "custom": {
+      "greedy": {
+        "n_total": 200,
+        "n_scored": 200,
+        "accuracy": 0.295,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "greedy": 1.0
+        },
+        "runtime_min": 10.67
+      },
+      "alta": {
+        "n_total": 200,
+        "n_scored": 200,
+        "accuracy": 0.65,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta": 1.0
+        },
+        "runtime_min": 14.52
+      },
+      "cured": {
+        "n_total": 200,
+        "n_scored": 200,
+        "accuracy": 0.65,
+        "mc1": null,
+        "mc2": null,
+        "rep_rate": 0.0,
+        "routing": {
+          "alta_global_viable": 1.0
+        },
+        "runtime_min": 24.47
+      }
+    }
+  }
+}
