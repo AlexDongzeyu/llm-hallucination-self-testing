@@ -1,7 +1,0 @@
-﻿Running in API mode: backend=cloudflare models=['@cf/meta/llama-3.1-8b-instruct']
-
-Question: Answer in one word: ok
-
-Model:    @cf/meta/llama-3.1-8b-instruct
-Answer:   Confirmed.
-Strategy: api_greedy_general | domain=general

@@ -1,66 +1,0 @@
-`torch_dtype` is deprecated! Use `dtype` instead!
-Loading weights:   0%|          | 0/254 [00:00<?, ?it/s]Loading weights:   0%|          | 1/254 [00:00<01:56,  2.17it/s]Loading weights:   4%|3         | 9/254 [00:00<00:12, 20.14it/s]Loading weights:   7%|7         | 19/254 [00:00<00:05, 39.55it/s]Loading weights:  11%|#1        | 28/254 [00:00<00:04, 52.24it/s]Loading weights:  15%|#5        | 39/254 [00:00<00:03, 65.32it/s]Loading weights:  19%|#9        | 49/254 [00:01<00:02, 70.59it/s]Loading weights:  23%|##2       | 58/254 [00:01<00:02, 74.39it/s]Loading weights:  27%|##6       | 68/254 [00:01<00:02, 77.40it/s]Loading weights:  32%|###1      | 81/254 [00:01<00:01, 89.55it/s]Loading weights:  37%|###6      | 93/254 [00:01<00:01, 92.42it/s]Loading weights:  41%|####      | 103/254 [00:01<00:01, 91.59it/s]Loading weights:  44%|####4     | 113/254 [00:01<00:01, 86.94it/s]Loading weights:  49%|####9     | 125/254 [00:01<00:01, 94.43it/s]Loading weights:  53%|#####3    | 135/254 [00:01<00:01, 90.72it/s]Loading weights:  58%|#####7    | 147/254 [00:02<00:01, 91.65it/s]Loading weights:  62%|######1   | 157/254 [00:02<00:01, 87.18it/s]Loading weights:  65%|######5   | 166/254 [00:02<00:01, 87.58it/s]Loading weights:  69%|######8   | 175/254 [00:02<00:00, 87.77it/s]Loading weights:  73%|#######2  | 185/254 [00:02<00:00, 85.24it/s]Loading weights:  76%|#######6  | 194/254 [00:02<00:00, 84.81it/s]Loading weights:  80%|#######9  | 203/254 [00:02<00:00, 83.81it/s]Loading weights:  83%|########3 | 212/254 [00:02<00:00, 84.26it/s]Loading weights:  87%|########7 | 221/254 [00:02<00:00, 84.61it/s]Loading weights:  92%|#########1| 233/254 [00:03<00:00, 93.92it/s]Loading weights:  96%|#########5| 243/254 [00:03<00:00, 94.08it/s]Loading weights: 100%|#########9| 253/254 [00:03<00:00, 92.87it/s]Loading weights: 100%|##########| 254/254 [00:03<00:00, 77.66it/s]
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|##########| 103/103 [00:00<00:00, 11747.47it/s]
-Traceback (most recent call last):
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\experiments\build_routing_dataset.py", line 26, in <module>
-    from generate_instruct import (
-    ...<8 lines>...
-    )
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\src\generate_instruct.py", line 36, in <module>
-    scorer = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\sentence_transformers\SentenceTransformer.py", line 327, in __init__
-    modules, self.module_kwargs = self._load_sbert_model(
-                                  ~~~~~~~~~~~~~~~~~~~~~~^
-        model_name_or_path,
-        ^^^^^^^^^^^^^^^^^^^
-    ...<7 lines>...
-        config_kwargs=config_kwargs,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\sentence_transformers\SentenceTransformer.py", line 2323, in _load_sbert_model
-    module = module_class.load(
-        model_name_or_path,
-    ...<11 lines>...
-        backend=self.backend,
-    )
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\sentence_transformers\models\Transformer.py", line 436, in load
-    return cls(model_name_or_path=model_name_or_path, **init_kwargs)
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\sentence_transformers\models\Transformer.py", line 121, in __init__
-    self._load_model(model_name_or_path, config, cache_dir, backend, is_peft_model, **model_args)
-    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\sentence_transformers\models\Transformer.py", line 270, in _load_model
-    self.auto_model = AutoModel.from_pretrained(
-                      ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        model_name_or_path, config=config, cache_dir=cache_dir, **model_args
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\models\auto\auto_factory.py", line 374, in from_pretrained
-    return model_class.from_pretrained(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs, **kwargs
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\modeling_utils.py", line 4138, in from_pretrained
-    loading_info = cls._finalize_model_loading(model, load_config, loading_info)
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\modeling_utils.py", line 4299, in _finalize_model_loading
-    log_state_dict_report(
-    ~~~~~~~~~~~~~~~~~~~~~^
-        model=model,
-        ^^^^^^^^^^^^
-    ...<3 lines>...
-        logger=logger,
-        ^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\utils\loading_report.py", line 262, in log_state_dict_report
-    report = loading_info.create_loading_report()
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\utils\loading_report.py", line 182, in create_loading_report
-    f"\n- {_color('UNEXPECTED', 'orange') + PALETTE['italic']}\t:can be ignored when loading from different "
-           ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\dongz\OneDrive\Project Code\LLM_Hallucination\llm-env\Lib\site-packages\transformers\utils\loading_report.py", line 123, in _color
-    if sys.stdout.isatty():
-       ^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'isatty'

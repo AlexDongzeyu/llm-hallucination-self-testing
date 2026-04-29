@@ -1,4 +1,0 @@
-﻿START 2026-04-03T15:11:44.3656007-04:00 run_instruct_sweep
-DONE 2026-04-03T16:15:12.1605087-04:00 run_instruct_sweep exit=0
-START 2026-04-03T16:15:12.1661419-04:00 run_medhallu_eval
-DONE 2026-04-03T16:30:21.5342225-04:00 run_medhallu_eval exit=-1
