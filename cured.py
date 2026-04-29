@@ -244,9 +244,11 @@ def get_model_device(model: Any) -> torch.device:
 
 
 def detect_domain(question: str) -> str:
+    import re
     q = question.lower()
-    if any(k in q for k in MEDICAL_KEYWORDS):
-        return "medical"
+    for k in MEDICAL_KEYWORDS:
+        if re.search(r'\b' + re.escape(k) + r'\b', q):
+            return "medical"
     if MED_PATTERN.search(question):
         return "medical"
     return "general"
@@ -1911,8 +1913,11 @@ class CUREDAPIRouter:
         self.api_model = api_model
         self.api_temperature = float(api_temperature)
 
-    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
-        domain = detect_domain(question)
+    def route(
+        self, question: str, max_new_tokens: int = 80, scoring: str = "cosine", domain: str | None = None
+    ) -> dict[str, Any]:
+        if not domain:
+            domain = detect_domain(question)
 
         if scoring in ("letter", "yesno"):
             text = api_generate(
@@ -2777,8 +2782,11 @@ class CUREDRouterV2:
 
         return r2_q, var_r2_q, kappa_q, ECR_q, H_final, SC_q
 
-    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
-        domain = detect_domain(question)
+    def route(
+        self, question: str, max_new_tokens: int = 80, scoring: str = "cosine", domain: str | None = None
+    ) -> dict[str, Any]:
+        if not domain:
+            domain = detect_domain(question)
         prompt = format_prompt(self.tokenizer, question)
         r2_q, var_r2_q, kappa_q, ECR_q, H_final, SC_q = self._features(prompt)
 
@@ -2934,8 +2942,11 @@ class CUREDRouter:
         self.alta_viable = self.mean_r2 >= ALTA_R2_CUTOFF
         self.iti_available = self.top_heads is not None and self.head_vectors is not None
 
-    def route(self, question: str, max_new_tokens: int = 80, scoring: str = "cosine") -> dict[str, Any]:
-        domain = detect_domain(question)
+    def route(
+        self, question: str, max_new_tokens: int = 80, scoring: str = "cosine", domain: str | None = None
+    ) -> dict[str, Any]:
+        if not domain:
+            domain = detect_domain(question)
         prompt = format_prompt(self.tokenizer, question)
 
         if scoring in ("letter", "yesno"):
@@ -3108,7 +3119,7 @@ def load_custom_csv(
                 {
                     "question": q,
                     "reference": a,
-                    "domain": detect_domain(q),
+                    "domain": row.get("domain", "").strip() or detect_domain(q),
                     "dataset": "custom_csv",
                 }
             )
@@ -3226,7 +3237,7 @@ def run_protocol(
             extra = {"consistency": round(float(out["consistency"]), 4), "n_samples": int(out["n_samples"])}
 
         elif protocol == "cured":
-            out = router.route(q, max_new_tokens=max_new_tokens, scoring=scoring)
+            out = router.route(q, max_new_tokens=max_new_tokens, scoring=scoring, domain=sample.get("domain"))
             text = out["text"]
             strategy = out["strategy"]
             extra = {k: v for k, v in out.items() if k not in ("text", "strategy")}
@@ -3428,7 +3439,7 @@ def run_api_protocol(
                 )
                 strategy = "api_cove"
             elif protocol == "cured_api":
-                out = api_router.route(q, max_new_tokens=max_new_tokens, scoring=scoring)
+                out = api_router.route(q, max_new_tokens=max_new_tokens, scoring=scoring, domain=sample.get("domain"))
                 text = out["text"]
                 strategy = out["strategy"]
                 extra = {k: v for k, v in out.items() if k not in ("text", "strategy")}

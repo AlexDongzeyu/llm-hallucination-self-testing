@@ -1,0 +1,16 @@
+﻿{
+  "_comment": "Calibrated thresholds. tau_kappa/tau_ECR corrected from broken defaults (0.08/0.10) to match empirical per-question feature distributions.",
+  "_calibration_source": "Phase 2 ablations + 8B logit-linearity profile (results/CANONICAL_v2/profile_8b.json); manual review. See cured.py CRITICAL BUG HISTORY and RESULTS.md.",
+  "tau_R2": 0.65,
+  "tau_kappa": 0.70,
+  "tau_ECR": 0.04,
+  "tau_H_easy": 0.0,
+  "tau_H_hard": 3.0,
+  "tau_SC_easy": 0.90,
+  "tau_SC_hard": 0.60,
+  "beta1": 3.0,
+  "beta2": 0.5,
+  "beta3": 5.0,
+  "beta4": 2.0,
+  "profile_mean_r2": 0.582
+}
