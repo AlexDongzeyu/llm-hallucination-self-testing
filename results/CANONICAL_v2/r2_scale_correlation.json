@@ -1,0 +1,7 @@
+{
+  "scale_level_pearson_r": 0.9859,
+  "scale_level_pearson_p": 0.0141,
+  "per_question_pearson_r": 0.0393,
+  "per_question_pearson_p": 0.5803,
+  "interpretation": "Scale-level R\u00b2 strongly predicts ALTA regime viability. Per-question R\u00b2 does not predict per-question gain. This justifies CURED's global scale shortcut over per-question gating."
+}
